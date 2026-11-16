@@ -7,6 +7,7 @@ import { redirect } from "next/navigation"
 import { getUser } from "../lib/auth"
 import { query } from "../lib/db"
 import { parseEuroToCents } from "../lib/money"
+import { givenName } from "../lib/names"
 
 function applicationId(formData) {
   const id = Number(formData.get("applicationId"))
@@ -32,7 +33,7 @@ export async function addApplication(formData) {
   if (!user?.can_write) redirect("/?hinweis=recht")
 
   const applicationDate = String(formData.get("applicationDate") ?? "").trim()
-  const applicant = String(formData.get("applicant") ?? "").trim()
+  const applicant = givenName(cleanName(formData.get("applicant")))
   const purpose = String(formData.get("purpose") ?? "").trim()
   const amountCents = parseEuroToCents(formData.get("amount"))
 
@@ -105,7 +106,7 @@ export async function addUser(formData) {
   const user = await getUser()
   if (!user?.can_write) redirect("/?hinweis=recht")
 
-  const name = cleanName(formData.get("name"))
+  const name = givenName(cleanName(formData.get("name")))
   const roleLabel = cleanName(formData.get("roleLabel"))
   const canWrite = formData.get("canWrite") === "on"
   if (name.length < 1 || name.length > 120 || roleLabel.length > 80) {

@@ -16,12 +16,12 @@ function token() {
 }
 
 const users = [
-  ["Mario Muja", "Vorsitzender und Schatzmeister", true, true, 1],
-  ["Meike Brand", "Stellvertretende Vorsitzende", true, false, 2],
-  ["Sebastian Siem", "Beisitzer", true, false, 3],
-  ["Alexander Nehls", "Beisitzer", true, false, 4],
-  ["Markus Fürstenberg", null, false, false, 5],
-  ["Miriam Rasched", null, false, false, 6],
+  ["Mario", "Vorsitzender und Schatzmeister", true, true, 1],
+  ["Meike", "Stellvertretende Vorsitzende", true, false, 2],
+  ["Sebastian", "Beisitzer", true, false, 3],
+  ["Alexander", "Beisitzer", true, false, 4],
+  ["Markus", null, false, false, 5],
+  ["Miriam", null, false, false, 6],
 ]
 
 const firstPurpose =
@@ -104,11 +104,11 @@ for (const [name, roleLabel, canWrite, isTreasurer, sortOrder] of users) {
 
 const inserted = await db.query(
   `INSERT INTO applications (application_date, applicant, purpose, amount_cents, voting_closed)
-   SELECT DATE '2026-11-10', 'Mario Muja', $1, 5479, FALSE
+   SELECT DATE '2026-11-10', 'Mario', $1, 5479, FALSE
    WHERE NOT EXISTS (
      SELECT 1 FROM applications
      WHERE application_date = DATE '2026-11-10'
-       AND applicant = 'Mario Muja'
+       AND applicant = 'Mario'
        AND purpose = $1
    )
    RETURNING id`,
