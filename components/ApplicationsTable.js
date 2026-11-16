@@ -41,16 +41,19 @@ function headerFloor(header) {
 }
 
 function voteButtonWidth(table) {
-  const probe = document.createElement("button")
-  probe.className = "btn vote-btn btn-outline-success"
-  probe.type = "button"
-  probe.textContent = "Ich stimme nicht zu"
-  probe.style.cssText =
-    "position:absolute;left:-9999px;top:0;width:max-content;white-space:nowrap;"
-  table.appendChild(probe)
-  const width = probe.getBoundingClientRect().width
-  probe.remove()
-  return width
+  let widest = 0
+  for (const word of ["Ich", "stimme", "nicht", "zu"]) {
+    const probe = document.createElement("button")
+    probe.className = "btn vote-btn btn-outline-success"
+    probe.type = "button"
+    probe.textContent = word
+    probe.style.cssText =
+      "position:absolute;left:-9999px;top:0;width:max-content;white-space:nowrap;"
+    table.appendChild(probe)
+    widest = Math.max(widest, probe.getBoundingClientRect().width)
+    probe.remove()
+  }
+  return widest
 }
 
 function columnFloor(header, table, userId) {

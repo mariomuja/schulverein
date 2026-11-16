@@ -6,6 +6,16 @@ function label(decision) {
   return "—"
 }
 
+function VoteLabel({ text }) {
+  const words = text.split(/\s+/).filter(Boolean)
+  return words.map((word, index) => (
+    <span key={`${index}-${word}`}>
+      {index > 0 ? " " : null}
+      <span className="vote-word">{word}</span>
+    </span>
+  ))
+}
+
 export default function VoteControl({ application, voter, user }) {
   const decision = application.votes[voter.id] ?? null
   const canEdit =
@@ -24,7 +34,7 @@ export default function VoteControl({ application, voter, user }) {
           className={`btn vote-btn ${decision === "yes" ? "btn-success" : "btn-outline-success"}`}
           type="submit"
         >
-          Ich stimme zu
+          <VoteLabel text="Ich stimme zu" />
         </button>
       </form>
       <form action={castVote}>
@@ -34,7 +44,7 @@ export default function VoteControl({ application, voter, user }) {
           className={`btn vote-btn ${decision === "no" ? "btn-danger" : "btn-outline-danger"}`}
           type="submit"
         >
-          Ich stimme nicht zu
+          <VoteLabel text="Ich stimme nicht zu" />
         </button>
       </form>
     </div>
