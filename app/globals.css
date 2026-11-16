@@ -89,6 +89,40 @@ body {
   width: 10%;
 }
 
+.table-resize-wrap {
+  position: relative;
+}
+
+.col-line {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 3;
+}
+
+.col-line::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  background: transparent;
+}
+
+.col-line:hover::after,
+.col-line.is-active::after {
+  background: #c41230;
+}
+
+body.is-resizing-columns,
+body.is-resizing-columns * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
 .vote-btn,
 .close-btn,
 .save-btn {

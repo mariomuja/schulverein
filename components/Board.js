@@ -1,7 +1,8 @@
-import Link from "next/link"
 import { addApplication, saveAuditDate } from "../app/actions"
 import { formatEuro, formatGermanDate } from "../lib/money"
+import ApplicationsTable from "./ApplicationsTable"
 import CloseControl from "./CloseControl"
+import DateSort from "./DateSort"
 import StatusIcon from "./StatusIcon"
 import VoteControl from "./VoteControl"
 
@@ -11,24 +12,6 @@ const hints = {
   antrag: "Der Antrag konnte nicht gespeichert werden. Bitte alle Felder prüfen.",
   geschlossen: "Die Abstimmung ist abgeschlossen. Die Stimme kann nicht mehr geändert werden.",
   schatzmeister: "Nur der Schatzmeister kann die Abstimmung abschließen.",
-}
-
-function DateSort({ sort, className = "" }) {
-  const nextSort = sort === "asc" ? "desc" : "asc"
-  const label =
-    sort === "asc"
-      ? "Datum aufwärts, älteste zuerst. Auf abwärts umschalten."
-      : "Datum abwärts, jüngste zuerst. Auf aufwärts umschalten."
-
-  return (
-    <Link
-      href={`/?sort=${nextSort}`}
-      className={`date-sort ${className}`.trim()}
-      aria-label={label}
-    >
-      Datum <span aria-hidden="true">{sort === "asc" ? "↑" : "↓"}</span>
-    </Link>
-  )
 }
 
 function roleLine(user) {
@@ -92,79 +75,13 @@ export default function Board({ user, data, hinweis, sort }) {
         Gesamtsumme genehmigter Förderanträge: {formatEuro(data.approvedSumCents)} EUR
       </p>
 
-      <div className="d-none d-xl-block table-responsive card shadow-sm">
-        <table className="table table-bordered table-hover align-middle mb-0 applications-table">
-          <colgroup>
-            <col className="col-date" />
-            <col className="col-applicant" />
-            <col className="col-purpose" />
-            <col className="col-amount" />
-            {data.writers.map((writer) => (
-              <col className="col-voter" key={writer.id} />
-            ))}
-            <col className="col-approved" />
-            <col className="col-closed" />
-          </colgroup>
-          <thead className="table-light">
-            <tr>
-              <th>
-                <DateSort sort={sort} />
-              </th>
-              <th>Antragsteller</th>
-              <th className="col-purpose">Zweck</th>
-              <th className="text-end">Betrag</th>
-              {data.writers.map((writer) => (
-                <th key={writer.id}>
-                  <div>{writer.name}</div>
-                  {writer.role_label ? (
-                    <div className="fw-normal text-secondary small">
-                      {writer.role_label === "Vorsitzender und Schatzmeister" ? (
-                        <>
-                          Vorsitzender und
-                          <br />
-                          Schatzmeister
-                        </>
-                      ) : (
-                        writer.role_label
-                      )}
-                    </div>
-                  ) : null}
-                </th>
-              ))}
-              <th>Genehmigt</th>
-              <th>Abstimmung abgeschlossen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.applications.map((application) => (
-              <tr key={application.id}>
-                <td className="text-nowrap">
-                  {formatGermanDate(application.application_date)}
-                </td>
-                <td>{application.applicant}</td>
-                <td className="purpose col-purpose">{application.purpose}</td>
-                <td className="text-end text-nowrap">
-                  {formatEuro(application.amount_cents)} €
-                </td>
-                {data.writers.map((writer) => (
-                  <td key={writer.id}>
-                    <VoteControl
-                      application={application}
-                      voter={writer}
-                      user={user}
-                    />
-                  </td>
-                ))}
-                <td className="text-center">
-                  <StatusIcon approved={application.approved} />
-                </td>
-                <td>
-                  <CloseControl application={application} user={user} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="d-none d-xl-block">
+        <ApplicationsTable
+          applications={data.applications}
+          writers={data.writers}
+          user={user}
+          sort={sort}
+        />
       </div>
 
       <div className="d-xl-none">
