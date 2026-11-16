@@ -20,8 +20,8 @@ const users = [
   ["Meike", "Stellvertretende Vorsitzende", true, false, 2],
   ["Sebastian", "Beisitzer", true, false, 3],
   ["Alexander", "Beisitzer", true, false, 4],
-  ["Markus", null, false, false, 5],
-  ["Miriam", null, false, false, 6],
+  ["Markus", "Kassenprüfung", false, false, 5],
+  ["Miriam", "Kassenprüfung", false, false, 6],
 ]
 
 const firstPurpose =
