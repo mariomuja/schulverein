@@ -85,29 +85,31 @@ export default function Board({ user, data, hinweis, sort, filter = "" }) {
         </p>
       </aside>
 
-      <div className="d-flex flex-column flex-sm-row gap-2 mb-3">
-        <a className="btn btn-outline-secondary save-btn" href={`/export?sort=${sort}`}>
-          CSV exportieren
-        </a>
-        <a className="btn btn-outline-secondary save-btn" href="/export/pdf">
-          PDF seit Kassenprüfung
-        </a>
-      </div>
+      <div className="d-flex flex-column align-items-start gap-2 mb-3">
+        <div className="d-flex flex-wrap gap-2">
+          <a className="btn btn-sm btn-outline-secondary" href={`/export?sort=${sort}`}>
+            CSV exportieren
+          </a>
+          <a className="btn btn-sm btn-outline-secondary" href="/export/pdf">
+            PDF seit Kassenprüfung
+          </a>
+        </div>
 
-      <div className="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Förderanträge filtern">
-        {filters.map((entry) => {
-          const active = entry.id === filter
-          return (
-            <Link
-              key={entry.id || "alle"}
-              className={`btn filter-btn ${active ? "btn-secondary" : "btn-outline-secondary"}`}
-              href={boardHref({ sort, filter: entry.id })}
-              aria-current={active ? "page" : undefined}
-            >
-              {entry.label}
-            </Link>
-          )
-        })}
+        <div className="d-flex flex-wrap gap-2" role="group" aria-label="Förderanträge filtern">
+          {filters.map((entry) => {
+            const active = entry.id === filter
+            return (
+              <Link
+                key={entry.id || "alle"}
+                className={`btn btn-sm ${active ? "btn-secondary" : "btn-outline-secondary"}`}
+                href={boardHref({ sort, filter: entry.id })}
+                aria-current={active ? "page" : undefined}
+              >
+                {entry.label}
+              </Link>
+            )
+          })}
+        </div>
       </div>
 
       {applications.length === 0 ? (
