@@ -9,8 +9,67 @@ import VoteControl from "./VoteControl"
 
 const MIN_COLUMN = 56
 
+function ColumnHeading({ text }) {
+  const words = String(text).split(/\s+/).filter(Boolean)
+  return words.map((word, index) => (
+    <span key={`${index}-${word}`}>
+      {index > 0 ? " " : null}
+      <span className="col-head-word">{word}</span>
+    </span>
+  ))
+}
+
 function storageKey(writerCount) {
   return `schulverein-column-widths:${writerCount}`
+}
+
+function headerFloor(header) {
+  const style = getComputedStyle(header)
+  const extra =
+    parseFloat(style.paddingLeft) +
+    parseFloat(style.paddingRight) +
+    parseFloat(style.borderLeftWidth) +
+    parseFloat(style.borderRightWidth)
+  const chunks = [...header.querySelectorAll(".col-head-word, .date-sort")]
+  const widest = chunks.reduce(
+    (max, node) => Math.max(max, node.getBoundingClientRect().width),
+    0,
+  )
+  return Math.max(MIN_COLUMN, Math.ceil(widest + extra))
+}
+
+function fitHeaderWords(table) {
+  const headers = [...table.querySelectorAll("thead th")]
+  const elements = [...table.querySelectorAll("col")]
+  if (headers.length === 0 || headers.length !== elements.length) return false
+  const floors = headers.map(headerFloor)
+  const widths = headers.map((header) => header.getBoundingClientRect().width)
+  const deficit = widths.reduce(
+    (sum, width, index) => sum + Math.max(0, floors[index] - width),
+    0,
+  )
+  if (deficit < 1) return false
+  const next = widths.map((width, index) => Math.max(width, floors[index]))
+  let remaining = next.reduce((sum, width) => sum + width, 0) - widths.reduce((sum, width) => sum + width, 0)
+  const donors = next
+    .map((width, index) => ({ index, slack: width - floors[index] }))
+    .filter((donor) => donor.slack > 1)
+    .sort((a, b) => {
+      if (a.index === 2) return -1
+      if (b.index === 2) return 1
+      return b.slack - a.slack
+    })
+  for (const donor of donors) {
+    if (remaining <= 0) break
+    const give = Math.min(donor.slack, remaining)
+    next[donor.index] -= give
+    remaining -= give
+  }
+  const total = next.reduce((sum, width) => sum + width, 0)
+  next.forEach((width, index) => {
+    elements[index].style.width = `${(width / total) * 100}%`
+  })
+  return true
 }
 
 function readWidths(writerCount, columnCount) {
@@ -28,6 +87,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
   const wrapRef = useRef(null)
   const tableRef = useRef(null)
   const lineRefs = useRef([])
+  const resizingRef = useRef(false)
   const columnCount = writers.length + 6
 
   useEffect(() => {
@@ -60,9 +120,14 @@ export default function ApplicationsTable({ applications, writers, user, sort })
 
     const saved = readWidths(writers.length, columnCount)
     if (saved) applyPercents(saved)
-    else placeLines()
+    fitHeaderWords(table)
+    placeLines()
 
-    const observer = new ResizeObserver(() => placeLines())
+    const observer = new ResizeObserver(() => {
+      if (resizingRef.current) return
+      fitHeaderWords(table)
+      placeLines()
+    })
     observer.observe(table)
     window.addEventListener("resize", placeLines)
 
@@ -87,6 +152,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
     }
     line.classList.add("is-active")
     document.body.classList.add("is-resizing-columns")
+    resizingRef.current = true
 
     const elements = [...table.querySelectorAll("col")]
     const headers = [...table.querySelectorAll("thead th")]
@@ -111,17 +177,21 @@ export default function ApplicationsTable({ applications, writers, user, sort })
       return percents
     }
 
+    const floors = headers.map(headerFloor)
+
     function onMove(moveEvent) {
       if (moveEvent.pointerId !== event.pointerId) return
+      const leftFloor = floors[index]
+      const rightFloor = floors[index + 1]
       let left = start[index] + (moveEvent.clientX - startX)
       let right = start[index + 1] - (moveEvent.clientX - startX)
-      if (left < MIN_COLUMN) {
-        right -= MIN_COLUMN - left
-        left = MIN_COLUMN
+      if (left < leftFloor) {
+        right -= leftFloor - left
+        left = leftFloor
       }
-      if (right < MIN_COLUMN) {
-        left -= MIN_COLUMN - right
-        right = MIN_COLUMN
+      if (right < rightFloor) {
+        left -= rightFloor - right
+        right = rightFloor
       }
       const next = start.slice()
       next[index] = left
@@ -133,6 +203,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
       if (upEvent.pointerId !== event.pointerId) return
       line.classList.remove("is-active")
       document.body.classList.remove("is-resizing-columns")
+      resizingRef.current = false
       line.removeEventListener("pointermove", onMove)
       line.removeEventListener("pointerup", onUp)
       line.removeEventListener("pointercancel", onUp)
@@ -172,29 +243,41 @@ export default function ApplicationsTable({ applications, writers, user, sort })
               <th>
                 <DateSort sort={sort} />
               </th>
-              <th>Antragsteller</th>
-              <th>Zweck</th>
-              <th className="text-end">Betrag</th>
+              <th>
+                <ColumnHeading text="Antragsteller" />
+              </th>
+              <th>
+                <ColumnHeading text="Zweck" />
+              </th>
+              <th className="text-end">
+                <ColumnHeading text="Betrag" />
+              </th>
               {writers.map((writer) => (
                 <th key={writer.id}>
-                  <div>{writer.name}</div>
+                  <div>
+                    <ColumnHeading text={writer.name} />
+                  </div>
                   {writer.role_label ? (
                     <div className="fw-normal text-secondary small">
                       {writer.role_label === "Vorsitzender und Schatzmeister" ? (
                         <>
-                          Vorsitzender und
+                          <span className="col-head-word">Vorsitzender und</span>
                           <br />
-                          Schatzmeister
+                          <span className="col-head-word">Schatzmeister</span>
                         </>
                       ) : (
-                        writer.role_label
+                        <ColumnHeading text={writer.role_label} />
                       )}
                     </div>
                   ) : null}
                 </th>
               ))}
-              <th>Genehmigt</th>
-              <th>Abstimmung abgeschlossen</th>
+              <th>
+                <ColumnHeading text="Genehmigt" />
+              </th>
+              <th>
+                <ColumnHeading text="Abstimmung abgeschlossen" />
+              </th>
             </tr>
           </thead>
           <tbody>

@@ -49,7 +49,17 @@ body {
   width: 100%;
 }
 
-.applications-table th,
+.applications-table th {
+  hyphens: none;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.applications-table .col-head-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
 .applications-table td {
   overflow-wrap: break-word;
 }
