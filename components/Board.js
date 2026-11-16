@@ -75,9 +75,14 @@ export default function Board({ user, data, hinweis, sort }) {
         <p className="fw-semibold mb-0">
           Gesamtsumme genehmigter Förderanträge: {formatEuro(data.approvedSumCents)} EUR
         </p>
-        <a className="btn btn-outline-secondary save-btn" href={`/export?sort=${sort}`}>
-          CSV exportieren
-        </a>
+        <div className="d-flex flex-column flex-sm-row gap-2">
+          <a className="btn btn-outline-secondary save-btn" href={`/export?sort=${sort}`}>
+            CSV exportieren
+          </a>
+          <a className="btn btn-outline-secondary save-btn" href="/export/pdf">
+            PDF seit Kassenprüfung
+          </a>
+        </div>
       </div>
 
       <div className="d-none d-xl-block">
