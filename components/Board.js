@@ -22,6 +22,8 @@ const hints = {
   stimme: "Dieser Benutzer hat bereits abgestimmt und kann nicht entfernt werden.",
   stimmen: "Dieser Förderantrag hat bereits Stimmen und kann nicht entfernt werden.",
   geaendert: "Dieser Förderantrag hat bereits Stimmen und kann nicht mehr geändert werden.",
+  versiegelt:
+    "Eine abgeschlossene Abstimmung bleibt festgeschrieben und kann nicht wieder geöffnet werden.",
 }
 
 const filters = [

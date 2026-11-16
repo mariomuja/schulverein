@@ -194,6 +194,14 @@ body.is-resizing-columns * {
   color: #212529;
 }
 
+.seal-meta {
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  line-height: 1.25;
+  color: #6c757d;
+  overflow-wrap: anywhere;
+}
+
 .form-control.audit-date {
   width: 10.5rem;
   max-width: 100%;

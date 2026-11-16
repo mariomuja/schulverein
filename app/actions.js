@@ -5,10 +5,11 @@ import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getUser } from "../lib/auth"
-import { query } from "../lib/db"
+import { query, withTransaction } from "../lib/db"
 import { parseEuroToCents } from "../lib/money"
 import { boardHref } from "../lib/list-query"
 import { givenName } from "../lib/names"
+import { appendLog, sealApplication } from "../lib/seal"
 
 function applicationId(formData) {
   const id = Number(formData.get("applicationId"))
@@ -23,9 +24,18 @@ export async function saveAuditDate(formData) {
   const date = String(formData.get("lastAuditDate") ?? "").trim()
   if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) redirect("/?hinweis=datum")
 
-  await query(`UPDATE settings SET last_audit_date = $1 WHERE id = 1`, [
-    date || null,
-  ])
+  await withTransaction(async (q) => {
+    const current = await q(
+      `SELECT last_audit_date::text AS last_audit_date FROM settings WHERE id = 1`,
+    )
+    const previous = current.rows[0]?.last_audit_date ?? ""
+    await q(`UPDATE settings SET last_audit_date = $1 WHERE id = 1`, [date || null])
+    await appendLog(q, {
+      user,
+      action: "kassenpruefung",
+      detail: `Datum der letzten Kassenprüfung von ${previous || "leer"} auf ${date || "leer"}.`,
+    })
+  })
   revalidatePath("/")
 }
 
@@ -49,11 +59,20 @@ export async function addApplication(formData) {
     redirect("/?hinweis=antrag")
   }
 
-  await query(
-    `INSERT INTO applications (application_date, applicant, purpose, amount_cents)
-     VALUES ($1, $2, $3, $4)`,
-    [applicationDate, applicant, purpose, amountCents],
-  )
+  await withTransaction(async (q) => {
+    const inserted = await q(
+      `INSERT INTO applications (application_date, applicant, purpose, amount_cents)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id`,
+      [applicationDate, applicant, purpose, amountCents],
+    )
+    await appendLog(q, {
+      user,
+      action: "antrag_angelegt",
+      applicationId: inserted.rows[0].id,
+      detail: `${applicationDate}, ${applicant}, ${amountCents} Cent.`,
+    })
+  })
   revalidatePath("/")
 }
 
@@ -64,12 +83,24 @@ export async function removeApplication(formData) {
   const id = applicationId(formData)
   if (!id) redirect("/?hinweis=antrag")
 
-  const removed = await query(
-    `DELETE FROM applications
-     WHERE id = $1
-       AND NOT EXISTS (SELECT 1 FROM votes WHERE application_id = $1)`,
-    [id],
-  )
+  const removed = await withTransaction(async (q) => {
+    const result = await q(
+      `DELETE FROM applications
+       WHERE id = $1
+         AND NOT EXISTS (SELECT 1 FROM votes WHERE application_id = $1)
+         AND NOT EXISTS (SELECT 1 FROM vote_records WHERE application_id = $1)`,
+      [id],
+    )
+    if (result.rowCount > 0) {
+      await appendLog(q, {
+        user,
+        action: "antrag_entfernt",
+        applicationId: id,
+        detail: "Förderantrag ohne Stimmen entfernt.",
+      })
+    }
+    return result
+  })
   if (removed.rowCount === 0) redirect("/?hinweis=stimmen")
   revalidatePath("/")
 }
@@ -102,13 +133,25 @@ export async function updateApplication(formData) {
     redirect(path("antrag"))
   }
 
-  const updated = await query(
-    `UPDATE applications
-     SET application_date = $2, applicant = $3, purpose = $4, amount_cents = $5
-     WHERE id = $1
-       AND NOT EXISTS (SELECT 1 FROM votes WHERE application_id = $1)`,
-    [id, applicationDate, applicant, purpose, amountCents],
-  )
+  const updated = await withTransaction(async (q) => {
+    const result = await q(
+      `UPDATE applications
+       SET application_date = $2, applicant = $3, purpose = $4, amount_cents = $5
+       WHERE id = $1
+         AND NOT EXISTS (SELECT 1 FROM votes WHERE application_id = $1)
+         AND NOT EXISTS (SELECT 1 FROM vote_records WHERE application_id = $1)`,
+      [id, applicationDate, applicant, purpose, amountCents],
+    )
+    if (result.rowCount > 0) {
+      await appendLog(q, {
+        user,
+        action: "antrag_geaendert",
+        applicationId: id,
+        detail: `${applicationDate}, ${applicant}, ${amountCents} Cent.`,
+      })
+    }
+    return result
+  })
   if (updated.rowCount === 0) redirect(path("geaendert"))
   revalidatePath("/")
 }
@@ -121,20 +164,42 @@ export async function castVote(formData) {
   const decision = String(formData.get("decision") ?? "")
   if (!id || (decision !== "yes" && decision !== "no")) redirect("/?hinweis=antrag")
 
-  const existing = await query(
-    `SELECT voting_closed FROM applications WHERE id = $1`,
-    [id],
-  )
-  if (!existing.rows[0]) redirect("/?hinweis=antrag")
-  if (existing.rows[0].voting_closed) redirect("/?hinweis=geschlossen")
-
-  await query(
-    `INSERT INTO votes (application_id, user_id, decision)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (application_id, user_id)
-     DO UPDATE SET decision = EXCLUDED.decision, updated_at = NOW()`,
-    [id, user.id, decision],
-  )
+  await withTransaction(async (q) => {
+    const existing = await q(
+      `SELECT voting_closed FROM applications WHERE id = $1 FOR UPDATE`,
+      [id],
+    )
+    if (!existing.rows[0]) redirect("/?hinweis=antrag")
+    const sealed = await q(
+      `SELECT 1 FROM vote_records WHERE application_id = $1`,
+      [id],
+    )
+    if (existing.rows[0].voting_closed || sealed.rowCount > 0) {
+      redirect("/?hinweis=geschlossen")
+    }
+    const previousVote = await q(
+      `SELECT decision FROM votes WHERE application_id = $1 AND user_id = $2`,
+      [id, user.id],
+    )
+    await q(
+      `INSERT INTO votes (application_id, user_id, decision)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (application_id, user_id)
+       DO UPDATE SET decision = EXCLUDED.decision, updated_at = NOW()`,
+      [id, user.id, decision],
+    )
+    const previous = previousVote.rows[0]?.decision
+    const label = decision === "yes" ? "Ja" : "Nein"
+    const detail = previous
+      ? `Von ${previous === "yes" ? "Ja" : "Nein"} auf ${label}.`
+      : label
+    await appendLog(q, {
+      user,
+      action: "stimme",
+      applicationId: id,
+      detail,
+    })
+  })
   revalidatePath("/")
 }
 
@@ -178,7 +243,10 @@ export async function removeUser(formData) {
   if (!Number.isInteger(id) || id <= 0) redirect("/?hinweis=benutzer")
 
   const found = await query(
-    `SELECT EXISTS (SELECT 1 FROM votes WHERE user_id = $1) AS has_voted
+    `SELECT (
+        EXISTS (SELECT 1 FROM votes WHERE user_id = $1)
+        OR EXISTS (SELECT 1 FROM vote_record_ballots WHERE user_id = $1)
+      ) AS has_voted
      FROM users
      WHERE id = $1`,
     [id],
@@ -190,7 +258,9 @@ export async function removeUser(formData) {
   const removed = await query(
     `DELETE FROM users
      WHERE id = $1
-       AND NOT EXISTS (SELECT 1 FROM votes WHERE user_id = $1)`,
+       AND NOT EXISTS (SELECT 1 FROM votes WHERE user_id = $1)
+       AND NOT EXISTS (SELECT 1 FROM vote_record_ballots WHERE user_id = $1)
+       AND NOT EXISTS (SELECT 1 FROM vote_records WHERE closed_by_user_id = $1)`,
     [id],
   )
   if (removed.rowCount === 0) redirect("/?hinweis=stimme")
@@ -220,10 +290,9 @@ export async function setVotingClosed(formData) {
   const id = applicationId(formData)
   if (!id) redirect("/?hinweis=antrag")
   const closed = String(formData.get("closed") ?? "") === "true"
+  if (!closed) redirect("/?hinweis=versiegelt")
 
-  await query(`UPDATE applications SET voting_closed = $1 WHERE id = $2`, [
-    closed,
-    id,
-  ])
+  const result = await withTransaction((q) => sealApplication(q, id, user))
+  if (result.error) redirect(`/?hinweis=${result.error}`)
   revalidatePath("/")
 }

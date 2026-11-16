@@ -91,7 +91,123 @@ await db.query(`
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (application_id, user_id)
   );
+  CREATE TABLE IF NOT EXISTS vote_records (
+    id SERIAL PRIMARY KEY,
+    application_id INTEGER NOT NULL UNIQUE REFERENCES applications(id),
+    closed_at TIMESTAMPTZ NOT NULL,
+    closed_by_user_id INTEGER REFERENCES users(id),
+    closed_by_name TEXT NOT NULL,
+    closed_by_role TEXT,
+    application_date DATE NOT NULL,
+    applicant TEXT NOT NULL,
+    purpose TEXT NOT NULL,
+    amount_cents INTEGER NOT NULL,
+    eligible_count INTEGER NOT NULL,
+    yes_count INTEGER NOT NULL,
+    no_count INTEGER NOT NULL,
+    approved BOOLEAN NOT NULL,
+    proof TEXT NOT NULL,
+    adopted BOOLEAN NOT NULL DEFAULT FALSE
+  );
+  CREATE TABLE IF NOT EXISTS vote_record_ballots (
+    record_id INTEGER NOT NULL REFERENCES vote_records(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    voter_name TEXT NOT NULL,
+    voter_role TEXT,
+    decision TEXT NOT NULL CHECK (decision IN ('yes', 'no', 'none')),
+    PRIMARY KEY (record_id, user_id)
+  );
+  CREATE TABLE IF NOT EXISTS audit_log (
+    id SERIAL PRIMARY KEY,
+    occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    actor_user_id INTEGER,
+    actor_name TEXT NOT NULL,
+    action TEXT NOT NULL,
+    application_id INTEGER,
+    detail TEXT NOT NULL
+  );
 `)
+
+await db.query(`
+  CREATE OR REPLACE FUNCTION schulverein_reject_change()
+  RETURNS trigger
+  LANGUAGE plpgsql
+  AS $$
+  BEGIN
+    RAISE EXCEPTION 'revisionssicher: dieser Eintrag darf nicht geändert werden';
+  END;
+  $$;
+
+  CREATE OR REPLACE FUNCTION schulverein_protect_application()
+  RETURNS trigger
+  LANGUAGE plpgsql
+  AS $$
+  BEGIN
+    IF TG_OP = 'DELETE' THEN
+      IF EXISTS (SELECT 1 FROM vote_records WHERE application_id = OLD.id) THEN
+        RAISE EXCEPTION 'revisionssicher: abgeschlossener Antrag darf nicht gelöscht werden';
+      END IF;
+      RETURN OLD;
+    END IF;
+    IF EXISTS (SELECT 1 FROM vote_records WHERE application_id = OLD.id) THEN
+      IF NEW.application_date IS DISTINCT FROM OLD.application_date
+         OR NEW.applicant IS DISTINCT FROM OLD.applicant
+         OR NEW.purpose IS DISTINCT FROM OLD.purpose
+         OR NEW.amount_cents IS DISTINCT FROM OLD.amount_cents
+         OR NEW.voting_closed IS DISTINCT FROM TRUE THEN
+        RAISE EXCEPTION 'revisionssicher: abgeschlossener Antrag darf nicht geändert werden';
+      END IF;
+    END IF;
+    RETURN NEW;
+  END;
+  $$;
+
+  CREATE OR REPLACE FUNCTION schulverein_protect_vote()
+  RETURNS trigger
+  LANGUAGE plpgsql
+  AS $$
+  DECLARE
+    app_id INTEGER;
+  BEGIN
+    app_id := CASE WHEN TG_OP = 'DELETE' THEN OLD.application_id ELSE NEW.application_id END;
+    IF TG_OP = 'UPDATE' AND NEW.application_id IS DISTINCT FROM OLD.application_id THEN
+      RAISE EXCEPTION 'revisionssicher: Stimme darf nicht verschoben werden';
+    END IF;
+    IF EXISTS (SELECT 1 FROM vote_records WHERE application_id = app_id) THEN
+      RAISE EXCEPTION 'revisionssicher: Stimme einer abgeschlossenen Abstimmung darf nicht geändert werden';
+    END IF;
+    IF TG_OP = 'DELETE' THEN
+      RETURN OLD;
+    END IF;
+    RETURN NEW;
+  END;
+  $$;
+`)
+
+for (const [table, fn] of [
+  ["vote_records", "schulverein_reject_change"],
+  ["vote_record_ballots", "schulverein_reject_change"],
+  ["audit_log", "schulverein_reject_change"],
+]) {
+  await db.query(`DROP TRIGGER IF EXISTS ${table}_frozen ON ${table}`)
+  await db.query(
+    `CREATE TRIGGER ${table}_frozen
+     BEFORE UPDATE OR DELETE ON ${table}
+     FOR EACH ROW EXECUTE FUNCTION ${fn}()`,
+  )
+}
+await db.query(`DROP TRIGGER IF EXISTS applications_sealed ON applications`)
+await db.query(
+  `CREATE TRIGGER applications_sealed
+   BEFORE UPDATE OR DELETE ON applications
+   FOR EACH ROW EXECUTE FUNCTION schulverein_protect_application()`,
+)
+await db.query(`DROP TRIGGER IF EXISTS votes_sealed ON votes`)
+await db.query(
+  `CREATE TRIGGER votes_sealed
+   BEFORE INSERT OR UPDATE OR DELETE ON votes
+   FOR EACH ROW EXECUTE FUNCTION schulverein_protect_vote()`,
+)
 
 for (const [name, roleLabel, canWrite, isTreasurer, sortOrder] of users) {
   await db.query(
