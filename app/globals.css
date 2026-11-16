@@ -21,6 +21,29 @@ body {
   white-space: normal;
 }
 
+.date-sort {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.date-sort:hover,
+.date-sort:focus-visible {
+  text-decoration: underline;
+}
+
+.date-sort-mobile {
+  min-height: 44px;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  background: #fff;
+}
+
 .applications-table {
   table-layout: fixed;
   width: 100%;

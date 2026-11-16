@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic"
 export default async function Page({ searchParams }) {
   const params = await searchParams
   const hinweis = Array.isArray(params.hinweis) ? params.hinweis[0] : params.hinweis
+  const sort = params.sort === "asc" ? "asc" : "desc"
   const user = await getUser()
 
   if (!user) {
@@ -18,6 +19,6 @@ export default async function Page({ searchParams }) {
     )
   }
 
-  const data = await loadBoard()
-  return <Board user={user} data={data} hinweis={hinweis} />
+  const data = await loadBoard(sort)
+  return <Board user={user} data={data} hinweis={hinweis} sort={sort} />
 }

@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { addApplication, saveAuditDate } from "../app/actions"
 import { formatEuro, formatGermanDate } from "../lib/money"
 import CloseControl from "./CloseControl"
@@ -12,6 +13,24 @@ const hints = {
   schatzmeister: "Nur der Schatzmeister kann die Abstimmung abschließen.",
 }
 
+function DateSort({ sort, className = "" }) {
+  const nextSort = sort === "asc" ? "desc" : "asc"
+  const label =
+    sort === "asc"
+      ? "Datum aufwärts, älteste zuerst. Auf abwärts umschalten."
+      : "Datum abwärts, jüngste zuerst. Auf aufwärts umschalten."
+
+  return (
+    <Link
+      href={`/?sort=${nextSort}`}
+      className={`date-sort ${className}`.trim()}
+      aria-label={label}
+    >
+      Datum <span aria-hidden="true">{sort === "asc" ? "↑" : "↓"}</span>
+    </Link>
+  )
+}
+
 function roleLine(user) {
   const parts = []
   if (user.role_label) parts.push(user.role_label)
@@ -19,7 +38,7 @@ function roleLine(user) {
   return parts.join(" · ")
 }
 
-export default function Board({ user, data, hinweis }) {
+export default function Board({ user, data, hinweis, sort }) {
   const message = hints[hinweis]
 
   return (
@@ -88,7 +107,9 @@ export default function Board({ user, data, hinweis }) {
           </colgroup>
           <thead className="table-light">
             <tr>
-              <th>Datum</th>
+              <th>
+                <DateSort sort={sort} />
+              </th>
               <th>Antragsteller</th>
               <th className="col-purpose">Zweck</th>
               <th className="text-end">Betrag</th>
@@ -147,6 +168,9 @@ export default function Board({ user, data, hinweis }) {
       </div>
 
       <div className="d-xl-none">
+        <div className="mb-2">
+          <DateSort sort={sort} className="date-sort-mobile" />
+        </div>
         {data.applications.map((application) => (
           <article className="card shadow-sm mb-3" key={application.id}>
             <div className="card-body">
