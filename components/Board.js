@@ -86,7 +86,15 @@ export default function Board({ user, data, hinweis }) {
                   <div>{writer.name}</div>
                   {writer.role_label ? (
                     <div className="fw-normal text-secondary small">
-                      {writer.role_label}
+                      {writer.role_label === "Vorsitzender und Schatzmeister" ? (
+                        <>
+                          Vorsitzender und
+                          <br />
+                          Schatzmeister
+                        </>
+                      ) : (
+                        writer.role_label
+                      )}
                     </div>
                   ) : null}
                 </th>
