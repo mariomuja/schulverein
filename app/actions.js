@@ -55,6 +55,23 @@ export async function addApplication(formData) {
   revalidatePath("/")
 }
 
+export async function removeApplication(formData) {
+  const user = await getUser()
+  if (!user?.can_write) redirect("/?hinweis=recht")
+
+  const id = applicationId(formData)
+  if (!id) redirect("/?hinweis=antrag")
+
+  const removed = await query(
+    `DELETE FROM applications
+     WHERE id = $1
+       AND NOT EXISTS (SELECT 1 FROM votes WHERE application_id = $1)`,
+    [id],
+  )
+  if (removed.rowCount === 0) redirect("/?hinweis=stimmen")
+  revalidatePath("/")
+}
+
 export async function castVote(formData) {
   const user = await getUser()
   if (!user?.can_write) redirect("/?hinweis=recht")

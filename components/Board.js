@@ -6,6 +6,7 @@ import AuditDateForm from "./AuditDateForm"
 import CloseControl from "./CloseControl"
 import CopyLink from "./CopyLink"
 import DateSort from "./DateSort"
+import RemoveApplication from "./RemoveApplication"
 import StatusIcon from "./StatusIcon"
 import VoteControl from "./VoteControl"
 
@@ -17,6 +18,7 @@ const hints = {
   schatzmeister: "Nur der Schatzmeister kann die Abstimmung abschließen.",
   benutzer: "Der Benutzer konnte nicht gespeichert werden. Bitte den Namen prüfen.",
   stimme: "Dieser Benutzer hat bereits abgestimmt und kann nicht entfernt werden.",
+  stimmen: "Dieser Förderantrag hat bereits Stimmen und kann nicht entfernt werden.",
 }
 
 function roleLine(user) {
@@ -122,6 +124,9 @@ export default function Board({ user, data, accounts = [], hinweis, sort }) {
               <div className="border-top pt-3 mt-2">
                 <div className="fw-semibold mb-2">Abstimmung abgeschlossen</div>
                 <CloseControl application={application} user={user} />
+                {user.can_write && !application.hasVotes ? (
+                  <RemoveApplication applicationId={application.id} />
+                ) : null}
               </div>
             </div>
           </article>

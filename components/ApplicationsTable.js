@@ -5,6 +5,7 @@ import { formatEuro, formatGermanDate } from "../lib/money"
 import { givenName } from "../lib/names"
 import CloseControl from "./CloseControl"
 import DateSort from "./DateSort"
+import RemoveApplication from "./RemoveApplication"
 import StatusIcon from "./StatusIcon"
 import VoteControl from "./VoteControl"
 
@@ -336,6 +337,9 @@ export default function ApplicationsTable({ applications, writers, user, sort })
                 </td>
                 <td>
                   <CloseControl application={application} user={user} />
+                  {user.can_write && !application.hasVotes ? (
+                    <RemoveApplication applicationId={application.id} />
+                  ) : null}
                 </td>
               </tr>
             ))}

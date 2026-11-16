@@ -76,6 +76,11 @@ body {
   overflow: hidden;
 }
 
+.applications-table .remove-application {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
 .applications-table .vote-btn {
   box-sizing: border-box;
   min-width: 0;
