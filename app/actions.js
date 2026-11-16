@@ -7,6 +7,7 @@ import { redirect } from "next/navigation"
 import { getUser } from "../lib/auth"
 import { query } from "../lib/db"
 import { parseEuroToCents } from "../lib/money"
+import { boardHref } from "../lib/list-query"
 import { givenName } from "../lib/names"
 
 function applicationId(formData) {
@@ -70,6 +71,45 @@ export async function removeApplication(formData) {
     [id],
   )
   if (removed.rowCount === 0) redirect("/?hinweis=stimmen")
+  revalidatePath("/")
+}
+
+export async function updateApplication(formData) {
+  const user = await getUser()
+  if (!user?.can_write) redirect(boardHref({ hinweis: "recht" }))
+
+  const id = applicationId(formData)
+  const applicationDate = String(formData.get("applicationDate") ?? "").trim()
+  const applicant = givenName(cleanName(formData.get("applicant")))
+  const purpose = String(formData.get("purpose") ?? "").trim()
+  const amountCents = parseEuroToCents(formData.get("amount"))
+  const path = (hinweis) =>
+    boardHref({
+      sort: String(formData.get("sort") ?? ""),
+      filter: String(formData.get("filter") ?? ""),
+      hinweis,
+    })
+
+  if (
+    !id ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(applicationDate) ||
+    applicant.length < 1 ||
+    applicant.length > 120 ||
+    purpose.length < 1 ||
+    purpose.length > 500 ||
+    amountCents == null
+  ) {
+    redirect(path("antrag"))
+  }
+
+  const updated = await query(
+    `UPDATE applications
+     SET application_date = $2, applicant = $3, purpose = $4, amount_cents = $5
+     WHERE id = $1
+       AND NOT EXISTS (SELECT 1 FROM votes WHERE application_id = $1)`,
+    [id, applicationDate, applicant, purpose, amountCents],
+  )
+  if (updated.rowCount === 0) redirect(path("geaendert"))
   revalidatePath("/")
 }
 

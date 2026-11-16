@@ -1,6 +1,7 @@
 import Link from "next/link"
+import { boardHref } from "../lib/list-query"
 
-export default function DateSort({ sort, className = "" }) {
+export default function DateSort({ sort, filter = "", className = "" }) {
   const nextSort = sort === "asc" ? "desc" : "asc"
   const label =
     sort === "asc"
@@ -9,7 +10,7 @@ export default function DateSort({ sort, className = "" }) {
 
   return (
     <Link
-      href={`/?sort=${nextSort}`}
+      href={boardHref({ sort: nextSort, filter })}
       className={`date-sort ${className}`.trim()}
       aria-label={label}
     >

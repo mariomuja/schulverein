@@ -81,9 +81,14 @@ body {
   overflow: hidden;
 }
 
-.applications-table .remove-application {
+.applications-table .remove-application,
+.applications-table .edit-application {
   font-size: 0.75rem;
   white-space: nowrap;
+}
+
+.filter-btn {
+  min-height: 44px;
 }
 
 .applications-table .vote-btn {

@@ -5,6 +5,7 @@ import { formatEuro, formatGermanDate } from "../lib/money"
 import { givenName } from "../lib/names"
 import CloseControl from "./CloseControl"
 import DateSort from "./DateSort"
+import EditApplication from "./EditApplication"
 import RemoveApplication from "./RemoveApplication"
 import StatusIcon from "./StatusIcon"
 import VoteControl from "./VoteControl"
@@ -118,7 +119,7 @@ function readWidths(writerCount, columnCount) {
   }
 }
 
-export default function ApplicationsTable({ applications, writers, user, sort }) {
+export default function ApplicationsTable({ applications, writers, user, sort, filter = "" }) {
   const wrapRef = useRef(null)
   const tableRef = useRef(null)
   const lineRefs = useRef([])
@@ -276,7 +277,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
           <thead className="table-light">
             <tr>
               <th>
-                <DateSort sort={sort} />
+                <DateSort sort={sort} filter={filter} />
               </th>
               <th>
                 <ColumnHeading text="Antragsteller" />
@@ -341,7 +342,10 @@ export default function ApplicationsTable({ applications, writers, user, sort })
                 <td>
                   <CloseControl application={application} user={user} />
                   {user.can_write && !application.hasVotes ? (
-                    <RemoveApplication applicationId={application.id} />
+                    <>
+                      <EditApplication application={application} sort={sort} filter={filter} />
+                      <RemoveApplication applicationId={application.id} />
+                    </>
                   ) : null}
                 </td>
               </tr>
