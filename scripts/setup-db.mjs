@@ -133,7 +133,7 @@ await db.end()
 const lines = links.rows.map((row) => {
   const right = row.can_write ? "schreiben" : "lesen"
   const role = row.role_label ? ` (${row.role_label})` : ""
-  return `${row.name}${role} [${right}]\n/anmelden/${row.login_token}`
+  return `${row.name}${role} [${right}]\n/${row.login_token}`
 })
 fs.writeFileSync("tokens.local.txt", `${lines.join("\n\n")}\n`)
 console.log(lines.join("\n\n"))
