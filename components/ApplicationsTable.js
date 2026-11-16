@@ -43,7 +43,7 @@ function voteButtonWidth(table) {
   const probe = document.createElement("button")
   probe.className = "btn vote-btn btn-outline-success"
   probe.type = "button"
-  probe.textContent = "Zustimmen"
+  probe.textContent = "Ich stimme nicht zu"
   probe.style.cssText =
     "position:absolute;left:-9999px;top:0;width:max-content;white-space:nowrap;"
   table.appendChild(probe)

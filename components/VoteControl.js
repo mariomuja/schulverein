@@ -24,7 +24,7 @@ export default function VoteControl({ application, voter, user }) {
           className={`btn vote-btn ${decision === "yes" ? "btn-success" : "btn-outline-success"}`}
           type="submit"
         >
-          Zustimmen
+          Ich stimme zu
         </button>
       </form>
       <form action={castVote}>
@@ -34,7 +34,7 @@ export default function VoteControl({ application, voter, user }) {
           className={`btn vote-btn ${decision === "no" ? "btn-danger" : "btn-outline-danger"}`}
           type="submit"
         >
-          Ablehnen
+          Ich stimme nicht zu
         </button>
       </form>
     </div>
