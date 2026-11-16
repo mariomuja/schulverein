@@ -74,12 +74,23 @@ export default function Board({ user, data, hinweis }) {
       </p>
 
       <div className="d-none d-xl-block table-responsive card shadow-sm">
-        <table className="table table-bordered table-hover align-middle mb-0">
+        <table className="table table-bordered table-hover align-middle mb-0 applications-table">
+          <colgroup>
+            <col className="col-date" />
+            <col className="col-applicant" />
+            <col className="col-purpose" />
+            <col className="col-amount" />
+            {data.writers.map((writer) => (
+              <col className="col-voter" key={writer.id} />
+            ))}
+            <col className="col-approved" />
+            <col className="col-closed" />
+          </colgroup>
           <thead className="table-light">
             <tr>
               <th>Datum</th>
               <th>Antragsteller</th>
-              <th>Zweck</th>
+              <th className="col-purpose">Zweck</th>
               <th className="text-end">Betrag</th>
               {data.writers.map((writer) => (
                 <th key={writer.id}>
@@ -110,7 +121,7 @@ export default function Board({ user, data, hinweis }) {
                   {formatGermanDate(application.application_date)}
                 </td>
                 <td>{application.applicant}</td>
-                <td className="purpose">{application.purpose}</td>
+                <td className="purpose col-purpose">{application.purpose}</td>
                 <td className="text-end text-nowrap">
                   {formatEuro(application.amount_cents)} €
                 </td>

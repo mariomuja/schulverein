@@ -17,7 +17,41 @@ body {
 }
 
 .purpose {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.applications-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.applications-table .col-date {
+  width: 7%;
+}
+
+.applications-table .col-applicant {
+  width: 11%;
+}
+
+.applications-table .col-purpose {
+  width: 34%;
+}
+
+.applications-table .col-amount {
+  width: 7%;
+}
+
+.applications-table .col-voter {
+  width: 7%;
+}
+
+.applications-table .col-approved {
+  width: 6%;
+}
+
+.applications-table .col-closed {
+  width: 8%;
 }
 
 .vote-btn,

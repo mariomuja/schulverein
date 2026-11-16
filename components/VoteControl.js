@@ -16,7 +16,7 @@ export default function VoteControl({ application, voter, user }) {
   }
 
   return (
-    <div className="d-grid gap-2 d-xl-flex">
+    <div className="d-grid gap-1">
       <form action={castVote}>
         <input type="hidden" name="applicationId" value={application.id} />
         <input type="hidden" name="decision" value="yes" />
