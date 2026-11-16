@@ -75,10 +75,6 @@ export default function Board({ user, data, hinweis, sort, filter = "" }) {
           canWrite={user.can_write}
           defaultValue={data.lastAuditDate ?? ""}
         />
-        <p className="audit-note-hint">
-          Gezählt werden genehmigte Anträge, deren Abstimmung abgeschlossen ist
-          und deren Datum an oder nach diesem Tag liegt.
-        </p>
         <p className="audit-note-sum">
           Gesamtsumme genehmigter Förderanträge seit der letzten Kassenprüfung:{" "}
           {formatEuro(data.approvedSumCents)} EUR

@@ -187,17 +187,8 @@ body.is-resizing-columns * {
   color: #343a40;
 }
 
-.audit-note-hint,
 .audit-note-sum {
   margin: 0;
-}
-
-.audit-note-hint {
-  font-size: 0.75rem;
-  color: #6c757d;
-}
-
-.audit-note-sum {
   margin-top: 0.15rem;
   font-weight: 600;
   color: #212529;
