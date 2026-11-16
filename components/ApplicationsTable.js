@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { formatEuro, formatGermanDate } from "../lib/money"
+import { givenName } from "../lib/names"
 import CloseControl from "./CloseControl"
 import DateSort from "./DateSort"
 import StatusIcon from "./StatusIcon"
@@ -255,7 +256,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
               {writers.map((writer) => (
                 <th key={writer.id}>
                   <div>
-                    <ColumnHeading text={writer.name} />
+                    <ColumnHeading text={givenName(writer.name)} />
                   </div>
                   {writer.role_label ? (
                     <div className="fw-normal text-secondary small">
@@ -286,7 +287,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
                 <td className="text-nowrap">
                   {formatGermanDate(application.application_date)}
                 </td>
-                <td>{application.applicant}</td>
+                <td>{givenName(application.applicant)}</td>
                 <td className="purpose">{application.purpose}</td>
                 <td className="text-end text-nowrap">
                   {formatEuro(application.amount_cents)} €

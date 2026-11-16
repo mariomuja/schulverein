@@ -1,5 +1,6 @@
 import { addApplication, saveAuditDate } from "../app/actions"
 import { formatEuro, formatGermanDate } from "../lib/money"
+import { givenName } from "../lib/names"
 import ApplicationsTable from "./ApplicationsTable"
 import CloseControl from "./CloseControl"
 import DateSort from "./DateSort"
@@ -29,7 +30,7 @@ export default function Board({ user, data, hinweis, sort }) {
       <div className="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
         <h1 className="h4 mb-0">Förderanträge</h1>
         <p className="mb-0 text-secondary">
-          {user.name}
+          {givenName(user.name)}
           <span className="d-block d-md-inline">
             <span className="d-none d-md-inline"> · </span>
             {roleLine(user)}
@@ -105,7 +106,7 @@ export default function Board({ user, data, hinweis, sort }) {
                   <div className="fw-semibold">
                     {formatGermanDate(application.application_date)}
                   </div>
-                  <div>{application.applicant}</div>
+                  <div>{givenName(application.applicant)}</div>
                 </div>
                 <div className="text-end">
                   <div className="fs-5 fw-semibold text-nowrap">
@@ -118,7 +119,7 @@ export default function Board({ user, data, hinweis, sort }) {
               <div className="small text-secondary mb-1">Stimmen</div>
               {data.writers.map((writer) => (
                 <div className="border-top py-2" key={writer.id}>
-                  <div className="fw-semibold">{writer.name}</div>
+                  <div className="fw-semibold">{givenName(writer.name)}</div>
                   {writer.role_label ? (
                     <div className="small text-secondary mb-1">
                       {writer.role_label}
