@@ -1,0 +1,60 @@
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.logo {
+  display: block;
+  height: 44px;
+  width: auto;
+  max-width: 100%;
+}
+
+.site-footer {
+  padding: 0.85rem 1rem calc(0.85rem + env(safe-area-inset-bottom));
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.purpose {
+  overflow-wrap: anywhere;
+}
+
+.vote-btn,
+.close-btn,
+.save-btn {
+  min-height: 44px;
+}
+
+@media (max-width: 1199.98px) {
+  .vote-btn,
+  .close-btn,
+  .save-btn {
+    width: 100%;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 1199.98px) {
+  .save-btn {
+    width: auto;
+  }
+}
+
+.form-control,
+.form-select {
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  .logo {
+    height: 72px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .vote-btn,
+  .close-btn {
+    min-height: 32px;
+    font-size: 0.8125rem;
+  }
+}
