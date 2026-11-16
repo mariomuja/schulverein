@@ -71,9 +71,14 @@ export default function Board({ user, data, hinweis, sort }) {
         </div>
       </form>
 
-      <p className="fw-semibold mb-3">
-        Gesamtsumme genehmigter Förderanträge: {formatEuro(data.approvedSumCents)} EUR
-      </p>
+      <div className="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 mb-3">
+        <p className="fw-semibold mb-0">
+          Gesamtsumme genehmigter Förderanträge: {formatEuro(data.approvedSumCents)} EUR
+        </p>
+        <a className="btn btn-outline-secondary save-btn" href={`/export?sort=${sort}`}>
+          CSV exportieren
+        </a>
+      </div>
 
       <div className="d-none d-xl-block">
         <ApplicationsTable
