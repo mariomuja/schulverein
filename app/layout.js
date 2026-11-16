@@ -1,3 +1,4 @@
+import SiteHeader from "../components/SiteHeader"
 import "./globals.css"
 
 export const metadata = {
@@ -35,15 +36,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="d-flex flex-column min-vh-100 bg-light">
-        <header className="bg-white border-bottom">
-          <div className="container-fluid px-3 py-2 py-md-3">
-            <img
-              className="logo"
-              src="/logo.png"
-              alt="Schulverein des Gymnasiums Heidberg"
-            />
-          </div>
-        </header>
+        <SiteHeader />
         <main className="container-xl px-3 py-3 py-md-4 flex-grow-1">
           {children}
         </main>

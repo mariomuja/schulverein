@@ -195,6 +195,10 @@ body.is-resizing-columns * {
   line-height: 2rem;
 }
 
+.logout-btn {
+  min-height: 44px;
+}
+
 .vote-btn,
 .close-btn,
 .save-btn {

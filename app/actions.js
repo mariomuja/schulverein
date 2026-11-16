@@ -2,6 +2,7 @@
 
 import { randomBytes } from "crypto"
 import { revalidatePath } from "next/cache"
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getUser } from "../lib/auth"
 import { query } from "../lib/db"
@@ -136,6 +137,22 @@ export async function removeUser(formData) {
   )
   if (removed.rowCount === 0) redirect("/?hinweis=stimme")
   revalidatePath("/")
+}
+
+export async function logout() {
+  const jar = await cookies()
+  const sessionId = jar.get("sv_session")?.value
+  if (sessionId) {
+    await query(`DELETE FROM sessions WHERE id = $1`, [sessionId])
+  }
+  jar.set("sv_session", "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  })
+  redirect("/")
 }
 
 export async function setVotingClosed(formData) {
