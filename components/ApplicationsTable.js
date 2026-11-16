@@ -80,12 +80,17 @@ export default function ApplicationsTable({ applications, writers, user, sort })
     if (!table || !wrap) return
 
     event.preventDefault()
-    line.setPointerCapture(event.pointerId)
+    try {
+      line.setPointerCapture(event.pointerId)
+    } catch {
+      // Manche Browser verweigern die Pointer-Capture für dieses Ereignis.
+    }
     line.classList.add("is-active")
     document.body.classList.add("is-resizing-columns")
 
     const elements = [...table.querySelectorAll("col")]
-    const start = elements.map((col) => col.getBoundingClientRect().width)
+    const headers = [...table.querySelectorAll("thead th")]
+    const start = headers.map((header) => header.getBoundingClientRect().width)
     const startX = event.clientX
 
     function apply(widths) {
@@ -132,7 +137,9 @@ export default function ApplicationsTable({ applications, writers, user, sort })
       line.removeEventListener("pointerup", onUp)
       line.removeEventListener("pointercancel", onUp)
       const percents = apply(
-        elements.map((col) => col.getBoundingClientRect().width),
+        [...table.querySelectorAll("thead th")].map(
+          (header) => header.getBoundingClientRect().width,
+        ),
       )
       localStorage.setItem(storageKey(writers.length), JSON.stringify(percents))
     }
@@ -230,6 +237,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
             role="separator"
             aria-orientation="vertical"
             aria-label="Spaltenbreite ändern"
+            tabIndex={0}
             onPointerDown={(event) => startResize(event, index)}
           />
         ))}
