@@ -61,31 +61,31 @@ body {
   padding: 0.25rem 0.35rem;
 }
 
-.applications-table .col-date {
+.applications-table col.col-date {
   width: 8%;
 }
 
-.applications-table .col-applicant {
+.applications-table col.col-applicant {
   width: 12%;
 }
 
-.applications-table .col-purpose {
+.applications-table col.col-purpose {
   width: 32%;
 }
 
-.applications-table .col-amount {
+.applications-table col.col-amount {
   width: 8%;
 }
 
-.applications-table .col-voter {
+.applications-table col.col-voter {
   width: 5.5%;
 }
 
-.applications-table .col-approved {
+.applications-table col.col-approved {
   width: 8%;
 }
 
-.applications-table .col-closed {
+.applications-table col.col-closed {
   width: 10%;
 }
 

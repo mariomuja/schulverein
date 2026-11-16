@@ -173,7 +173,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
                 <DateSort sort={sort} />
               </th>
               <th>Antragsteller</th>
-              <th className="col-purpose">Zweck</th>
+              <th>Zweck</th>
               <th className="text-end">Betrag</th>
               {writers.map((writer) => (
                 <th key={writer.id}>
@@ -204,7 +204,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
                   {formatGermanDate(application.application_date)}
                 </td>
                 <td>{application.applicant}</td>
-                <td className="purpose col-purpose">{application.purpose}</td>
+                <td className="purpose">{application.purpose}</td>
                 <td className="text-end text-nowrap">
                   {formatEuro(application.amount_cents)} €
                 </td>
