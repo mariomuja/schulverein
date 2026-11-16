@@ -26,32 +26,44 @@ body {
   width: 100%;
 }
 
+.applications-table th,
+.applications-table td {
+  overflow-wrap: break-word;
+}
+
+.applications-table .btn {
+  width: 100%;
+  white-space: normal;
+  line-height: 1.15;
+  padding: 0.25rem 0.35rem;
+}
+
 .applications-table .col-date {
-  width: 7%;
+  width: 8%;
 }
 
 .applications-table .col-applicant {
-  width: 11%;
+  width: 12%;
 }
 
 .applications-table .col-purpose {
-  width: 34%;
+  width: 32%;
 }
 
 .applications-table .col-amount {
-  width: 7%;
+  width: 8%;
 }
 
 .applications-table .col-voter {
-  width: 7%;
+  width: 5.5%;
 }
 
 .applications-table .col-approved {
-  width: 6%;
+  width: 8%;
 }
 
 .applications-table .col-closed {
-  width: 8%;
+  width: 10%;
 }
 
 .vote-btn,
