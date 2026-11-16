@@ -44,9 +44,9 @@ export default function Board({ user, data, hinweis, sort }) {
         </div>
       ) : null}
 
-      <form action={saveAuditDate} className="card shadow-sm mb-3">
-        <div className="card-body">
-          <label className="form-label" htmlFor="lastAuditDate">
+      <aside className="audit-note">
+        <form action={saveAuditDate}>
+          <label className="audit-note-label" htmlFor="lastAuditDate">
             Datum der letzten Kassenprüfung
           </label>
           <div className="audit-date-row">
@@ -64,26 +64,24 @@ export default function Board({ user, data, hinweis, sort }) {
               </button>
             ) : null}
           </div>
-          <p className="form-text mb-0">
-            Gezählt werden genehmigte Anträge, deren Abstimmung abgeschlossen
-            ist und deren Datum an oder nach diesem Tag liegt.
-          </p>
-        </div>
-      </form>
-
-      <div className="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 mb-3">
-        <p className="fw-semibold mb-0">
+        </form>
+        <p className="audit-note-hint">
+          Gezählt werden genehmigte Anträge, deren Abstimmung abgeschlossen ist
+          und deren Datum an oder nach diesem Tag liegt.
+        </p>
+        <p className="audit-note-sum">
           Gesamtsumme genehmigter Förderanträge seit der letzten Kassenprüfung:{" "}
           {formatEuro(data.approvedSumCents)} EUR
         </p>
-        <div className="d-flex flex-column flex-sm-row gap-2">
-          <a className="btn btn-outline-secondary save-btn" href={`/export?sort=${sort}`}>
-            CSV exportieren
-          </a>
-          <a className="btn btn-outline-secondary save-btn" href="/export/pdf">
-            PDF seit Kassenprüfung
-          </a>
-        </div>
+      </aside>
+
+      <div className="d-flex flex-column flex-sm-row gap-2 mb-3">
+        <a className="btn btn-outline-secondary save-btn" href={`/export?sort=${sort}`}>
+          CSV exportieren
+        </a>
+        <a className="btn btn-outline-secondary save-btn" href="/export/pdf">
+          PDF seit Kassenprüfung
+        </a>
       </div>
 
       <div className="d-none d-xl-block">
