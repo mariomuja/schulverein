@@ -1,9 +1,10 @@
-import { addApplication } from "../app/actions"
+import { addApplication, addUser, removeUser } from "../app/actions"
 import { formatEuro, formatGermanDate } from "../lib/money"
 import { givenName } from "../lib/names"
 import ApplicationsTable from "./ApplicationsTable"
 import AuditDateForm from "./AuditDateForm"
 import CloseControl from "./CloseControl"
+import CopyLink from "./CopyLink"
 import DateSort from "./DateSort"
 import StatusIcon from "./StatusIcon"
 import VoteControl from "./VoteControl"
@@ -14,6 +15,8 @@ const hints = {
   antrag: "Der Antrag konnte nicht gespeichert werden. Bitte alle Felder prüfen.",
   geschlossen: "Die Abstimmung ist abgeschlossen. Die Stimme kann nicht mehr geändert werden.",
   schatzmeister: "Nur der Schatzmeister kann die Abstimmung abschließen.",
+  benutzer: "Der Benutzer konnte nicht gespeichert werden. Bitte den Namen prüfen.",
+  stimme: "Dieser Benutzer hat bereits abgestimmt und kann nicht entfernt werden.",
 }
 
 function roleLine(user) {
@@ -23,7 +26,7 @@ function roleLine(user) {
   return parts.join(" · ")
 }
 
-export default function Board({ user, data, hinweis, sort }) {
+export default function Board({ user, data, accounts = [], hinweis, sort }) {
   const message = hints[hinweis]
 
   return (
@@ -189,6 +192,90 @@ export default function Board({ user, data, hinweis, sort }) {
             </div>
           </div>
         </form>
+      ) : null}
+
+      {user.can_write ? (
+        <section className="card shadow-sm mt-3">
+          <div className="card-body">
+            <h2 className="h5">Benutzer</h2>
+            <ul className="list-group list-group-flush mb-3">
+              {accounts.map((account) => (
+                <li className="list-group-item px-0" key={account.id}>
+                  <div className="d-flex flex-column flex-md-row justify-content-between gap-2">
+                    <div>
+                      <div className="fw-semibold">{account.name}</div>
+                      <div className="small text-secondary">
+                        {account.roleLabel ? `${account.roleLabel} · ` : ""}
+                        {account.canWrite ? "Schreibrecht" : "Leserecht"}
+                      </div>
+                    </div>
+                    {account.hasVoted ? (
+                      <div className="small text-secondary align-self-md-center">
+                        Hat bereits abgestimmt
+                      </div>
+                    ) : (
+                      <form action={removeUser} className="align-self-md-center">
+                        <input type="hidden" name="userId" value={account.id} />
+                        <button className="btn btn-outline-danger btn-sm" type="submit">
+                          Entfernen
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    <CopyLink href={account.loginUrl} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <h3 className="h6">Benutzer hinzufügen</h3>
+            <form action={addUser} className="row g-3">
+              <div className="col-12 col-md-5">
+                <label className="form-label" htmlFor="userName">
+                  Name
+                </label>
+                <input
+                  id="userName"
+                  className="form-control"
+                  name="name"
+                  maxLength={120}
+                  required
+                  autoComplete="name"
+                />
+              </div>
+              <div className="col-12 col-md-4">
+                <label className="form-label" htmlFor="roleLabel">
+                  Rolle
+                </label>
+                <input
+                  id="roleLabel"
+                  className="form-control"
+                  name="roleLabel"
+                  maxLength={80}
+                  placeholder="optional"
+                />
+              </div>
+              <div className="col-12 col-md-3 d-flex align-items-end">
+                <div className="form-check mb-2">
+                  <input
+                    id="canWrite"
+                    className="form-check-input"
+                    type="checkbox"
+                    name="canWrite"
+                  />
+                  <label className="form-check-label" htmlFor="canWrite">
+                    Schreibrecht
+                  </label>
+                </div>
+              </div>
+              <div className="col-12">
+                <button className="btn btn-primary save-btn" type="submit">
+                  Benutzer hinzufügen
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
       ) : null}
     </>
   )

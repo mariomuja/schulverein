@@ -1,5 +1,6 @@
 "use server"
 
+import { randomBytes } from "crypto"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { getUser } from "../lib/auth"
@@ -75,6 +76,65 @@ export async function castVote(formData) {
      DO UPDATE SET decision = EXCLUDED.decision, updated_at = NOW()`,
     [id, user.id, decision],
   )
+  revalidatePath("/")
+}
+
+function cleanName(value) {
+  return String(value ?? "").trim().replace(/\s+/g, " ")
+}
+
+export async function addUser(formData) {
+  const user = await getUser()
+  if (!user?.can_write) redirect("/?hinweis=recht")
+
+  const name = cleanName(formData.get("name"))
+  const roleLabel = cleanName(formData.get("roleLabel"))
+  const canWrite = formData.get("canWrite") === "on"
+  if (name.length < 1 || name.length > 120 || roleLabel.length > 80) {
+    redirect("/?hinweis=benutzer")
+  }
+
+  try {
+    await query(
+      `INSERT INTO users (name, role_label, can_write, is_treasurer, sort_order, login_token)
+       VALUES (
+         $1, $2, $3, FALSE,
+         (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM users),
+         $4
+       )`,
+      [name, roleLabel || null, canWrite, randomBytes(32).toString("base64url")],
+    )
+  } catch (error) {
+    if (error?.code === "23505") redirect("/?hinweis=benutzer")
+    throw error
+  }
+  revalidatePath("/")
+}
+
+export async function removeUser(formData) {
+  const user = await getUser()
+  if (!user?.can_write) redirect("/?hinweis=recht")
+
+  const id = Number(formData.get("userId"))
+  if (!Number.isInteger(id) || id <= 0) redirect("/?hinweis=benutzer")
+
+  const found = await query(
+    `SELECT EXISTS (SELECT 1 FROM votes WHERE user_id = $1) AS has_voted
+     FROM users
+     WHERE id = $1`,
+    [id],
+  )
+  if (!found.rows[0]) redirect("/?hinweis=benutzer")
+  if (found.rows[0].has_voted) redirect("/?hinweis=stimme")
+
+  await query(`DELETE FROM sessions WHERE user_id = $1`, [id])
+  const removed = await query(
+    `DELETE FROM users
+     WHERE id = $1
+       AND NOT EXISTS (SELECT 1 FROM votes WHERE user_id = $1)`,
+    [id],
+  )
+  if (removed.rowCount === 0) redirect("/?hinweis=stimme")
   revalidatePath("/")
 }
 
