@@ -185,13 +185,6 @@ body.is-resizing-columns * {
   color: #212529;
 }
 
-.audit-date-row {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-}
-
 .form-control.audit-date {
   width: 10.5rem;
   max-width: 100%;
@@ -200,18 +193,6 @@ body.is-resizing-columns * {
   min-height: 2rem;
   padding: 0 0.5rem;
   line-height: 2rem;
-}
-
-.btn.audit-save {
-  height: 2rem;
-  min-height: 2rem;
-  padding: 0 0.75rem;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: auto;
-  flex: 0 0 auto;
 }
 
 .vote-btn,

@@ -1,7 +1,8 @@
-import { addApplication, saveAuditDate } from "../app/actions"
+import { addApplication } from "../app/actions"
 import { formatEuro, formatGermanDate } from "../lib/money"
 import { givenName } from "../lib/names"
 import ApplicationsTable from "./ApplicationsTable"
+import AuditDateForm from "./AuditDateForm"
 import CloseControl from "./CloseControl"
 import DateSort from "./DateSort"
 import StatusIcon from "./StatusIcon"
@@ -45,26 +46,10 @@ export default function Board({ user, data, hinweis, sort }) {
       ) : null}
 
       <aside className="audit-note">
-        <form action={saveAuditDate}>
-          <label className="audit-note-label" htmlFor="lastAuditDate">
-            Datum der letzten Kassenprüfung
-          </label>
-          <div className="audit-date-row">
-            <input
-              id="lastAuditDate"
-              className="form-control audit-date"
-              type="date"
-              name="lastAuditDate"
-              defaultValue={data.lastAuditDate ?? ""}
-              disabled={!user.can_write}
-            />
-            {user.can_write ? (
-              <button className="btn btn-primary audit-save" type="submit">
-                Speichern
-              </button>
-            ) : null}
-          </div>
-        </form>
+        <AuditDateForm
+          canWrite={user.can_write}
+          defaultValue={data.lastAuditDate ?? ""}
+        />
         <p className="audit-note-hint">
           Gezählt werden genehmigte Anträge, deren Abstimmung abgeschlossen ist
           und deren Datum an oder nach diesem Tag liegt.
