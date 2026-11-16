@@ -66,9 +66,23 @@ body {
 
 .applications-table .btn {
   width: 100%;
+  max-width: 100%;
   white-space: normal;
   line-height: 1.15;
   padding: 0.25rem 0.35rem;
+}
+
+.applications-table .vote-cell {
+  overflow: hidden;
+}
+
+.applications-table .vote-btn {
+  box-sizing: border-box;
+  min-width: 0;
+  font-size: 0.75rem;
+  line-height: 1.1;
+  padding: 0.15rem 0.25rem;
+  white-space: nowrap;
 }
 
 .applications-table col.col-date {

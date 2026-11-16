@@ -39,11 +39,41 @@ function headerFloor(header) {
   return Math.max(MIN_COLUMN, Math.ceil(widest + extra))
 }
 
-function fitHeaderWords(table) {
+function voteButtonWidth(table) {
+  const probe = document.createElement("button")
+  probe.className = "btn vote-btn btn-outline-success"
+  probe.type = "button"
+  probe.textContent = "Zustimmen"
+  probe.style.cssText =
+    "position:absolute;left:-9999px;top:0;width:max-content;white-space:nowrap;"
+  table.appendChild(probe)
+  const width = probe.getBoundingClientRect().width
+  probe.remove()
+  return width
+}
+
+function columnFloor(header, table, userId) {
+  let floor = headerFloor(header)
+  if (header.dataset.userId && String(header.dataset.userId) === String(userId)) {
+    const index = [...header.parentElement.children].indexOf(header)
+    const cell = table.querySelector("tbody tr")?.children[index]
+    const style = cell ? getComputedStyle(cell) : null
+    const extra = style
+      ? parseFloat(style.paddingLeft) +
+        parseFloat(style.paddingRight) +
+        parseFloat(style.borderLeftWidth) +
+        parseFloat(style.borderRightWidth)
+      : 0
+    floor = Math.max(floor, Math.ceil(voteButtonWidth(table) + extra + 4))
+  }
+  return floor
+}
+
+function fitHeaderWords(table, userId) {
   const headers = [...table.querySelectorAll("thead th")]
   const elements = [...table.querySelectorAll("col")]
   if (headers.length === 0 || headers.length !== elements.length) return false
-  const floors = headers.map(headerFloor)
+  const floors = headers.map((header) => columnFloor(header, table, userId))
   const widths = headers.map((header) => header.getBoundingClientRect().width)
   const deficit = widths.reduce(
     (sum, width, index) => sum + Math.max(0, floors[index] - width),
@@ -121,12 +151,12 @@ export default function ApplicationsTable({ applications, writers, user, sort })
 
     const saved = readWidths(writers.length, columnCount)
     if (saved) applyPercents(saved)
-    fitHeaderWords(table)
+    fitHeaderWords(table, user.id)
     placeLines()
 
     const observer = new ResizeObserver(() => {
       if (resizingRef.current) return
-      fitHeaderWords(table)
+      fitHeaderWords(table, user.id)
       placeLines()
     })
     observer.observe(table)
@@ -136,7 +166,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
       observer.disconnect()
       window.removeEventListener("resize", placeLines)
     }
-  }, [applications, writers.length, columnCount, sort])
+  }, [applications, writers.length, columnCount, sort, user.id])
 
   function startResize(event, index) {
     if (event.button !== 0) return
@@ -178,7 +208,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
       return percents
     }
 
-    const floors = headers.map(headerFloor)
+    const floors = headers.map((header) => columnFloor(header, table, user.id))
 
     function onMove(moveEvent) {
       if (moveEvent.pointerId !== event.pointerId) return
@@ -254,7 +284,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
                 <ColumnHeading text="Betrag" />
               </th>
               {writers.map((writer) => (
-                <th key={writer.id}>
+                <th key={writer.id} data-user-id={writer.id}>
                   <div>
                     <ColumnHeading text={givenName(writer.name)} />
                   </div>
@@ -293,7 +323,7 @@ export default function ApplicationsTable({ applications, writers, user, sort })
                   {formatEuro(application.amount_cents)} €
                 </td>
                 {writers.map((writer) => (
-                  <td key={writer.id}>
+                  <td className="vote-cell" key={writer.id}>
                     <VoteControl
                       application={application}
                       voter={writer}
