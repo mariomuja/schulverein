@@ -48,18 +48,17 @@ export default function Board({ user, data, hinweis, sort }) {
           <label className="form-label" htmlFor="lastAuditDate">
             Datum der letzten Kassenprüfung
           </label>
-          <div className="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-end">
+          <div className="audit-date-row">
             <input
               id="lastAuditDate"
-              className="form-control"
-              style={{ maxWidth: "16rem" }}
+              className="form-control audit-date"
               type="date"
               name="lastAuditDate"
               defaultValue={data.lastAuditDate ?? ""}
               disabled={!user.can_write}
             />
             {user.can_write ? (
-              <button className="btn btn-primary save-btn" type="submit">
+              <button className="btn btn-primary audit-save" type="submit">
                 Speichern
               </button>
             ) : null}
