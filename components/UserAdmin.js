@@ -90,6 +90,24 @@ export default function UserAdmin({ accounts }) {
                   />
                 </div>
                 <div className="modal-body">
+                  <div className="alert alert-light border small mb-3" role="note">
+                    <ul className="mb-0 ps-3">
+                      <li>
+                        <span className="fw-semibold">Token deaktivieren:</span> der Nutzer kann sich
+                        nicht mehr anmelden (z.B. wenn er sein Amt abgegeben hat). Das Konto wird
+                        nicht gelöscht. Alle Abstimmungen des Nutzers bleiben dauerhaft erhalten.
+                      </li>
+                      <li>
+                        <span className="fw-semibold">Neues Token:</span> das alte Token wird
+                        ungültig. Der Nutzer kann sich nur noch mit dem neuen Token anmelden.
+                      </li>
+                      <li>
+                        <span className="fw-semibold">Entfernen:</span> das Konto wird gelöscht. Dies
+                        ist nur möglich, solange der Nutzer noch nicht an Abstimmungen teilgenommen
+                        hat.
+                      </li>
+                    </ul>
+                  </div>
                   {message ? (
                     <div className="alert alert-warning" role="status">
                       {message}
