@@ -32,8 +32,14 @@ export default function ApplicationCards({
         <div className="card-body">
             <div className="d-flex justify-content-between gap-3">
               <div>
-                <div className="fw-semibold">{formatGermanDate(application.application_date)}</div>
-                <div>{application.applicant}</div>
+                <div>
+                  <span className="text-secondary">Antrag vom: </span>
+                  <span className="fw-semibold">{formatGermanDate(application.application_date)}</span>
+                </div>
+                <div>
+                  <span className="text-secondary">Antragsteller: </span>
+                  {application.applicant}
+                </div>
               </div>
               <div className="text-end">
                 <div className="fs-5 fw-semibold text-nowrap">
