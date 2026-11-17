@@ -322,7 +322,7 @@ export default function ApplicationsTable({ applications, writers, user, sort, f
                 <td className="text-nowrap">
                   {formatGermanDate(application.application_date)}
                 </td>
-                <td>{givenName(application.applicant)}</td>
+                <td>{application.applicant}</td>
                 <td className="purpose">{application.purpose}</td>
                 <td className="text-end text-nowrap">
                   {formatEuro(application.amount_cents)} €

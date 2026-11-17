@@ -220,11 +220,11 @@ for (const [name, roleLabel, canWrite, isTreasurer, sortOrder] of users) {
 
 const inserted = await db.query(
   `INSERT INTO applications (application_date, applicant, purpose, amount_cents, voting_closed)
-   SELECT DATE '2026-11-10', 'Mario', $1, 5479, FALSE
+   SELECT DATE '2026-11-10', 'Mario Muja', $1, 5479, FALSE
    WHERE NOT EXISTS (
      SELECT 1 FROM applications
      WHERE application_date = DATE '2026-11-10'
-       AND applicant = 'Mario'
+       AND applicant = 'Mario Muja'
        AND purpose = $1
    )
    RETURNING id`,

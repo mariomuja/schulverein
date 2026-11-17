@@ -16,6 +16,7 @@ const hints = {
   recht: "Dafür fehlt die Berechtigung.",
   datum: "Bitte ein gültiges Datum wählen.",
   antrag: "Der Antrag konnte nicht gespeichert werden. Bitte alle Felder prüfen.",
+  nachname: "Beim Antragsteller müssen Vor- und Nachname genannt werden.",
   geschlossen: "Die Abstimmung ist abgeschlossen. Die Stimme kann nicht mehr geändert werden.",
   schatzmeister: "Nur der Schatzmeister kann die Abstimmung abschließen.",
   benutzer: "Der Benutzer konnte nicht gespeichert werden. Bitte den Namen prüfen.",
@@ -113,7 +114,7 @@ export default function Board({ user, data, hinweis, sort, filter = "" }) {
             <NewApplication
               sort={sort}
               filter={filter}
-              openOnError={hinweis === "antrag"}
+              openOnError={hinweis === "antrag" || hinweis === "nachname"}
             />
           ) : null}
         </div>
@@ -145,7 +146,7 @@ export default function Board({ user, data, hinweis, sort, filter = "" }) {
                   <div className="fw-semibold">
                     {formatGermanDate(application.application_date)}
                   </div>
-                  <div>{givenName(application.applicant)}</div>
+                  <div>{application.applicant}</div>
                 </div>
                 <div className="text-end">
                   <div className="fs-5 fw-semibold text-nowrap">

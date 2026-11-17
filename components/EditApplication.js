@@ -100,7 +100,8 @@ export default function EditApplication({ application, sort, filter }) {
                         maxLength={120}
                         defaultValue={application.applicant}
                         required
-                        autoComplete="given-name"
+                        placeholder="Vor- und Nachname"
+                        autoComplete="name"
                       />
                     </div>
                     <div className="col-12">

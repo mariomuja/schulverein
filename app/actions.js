@@ -8,7 +8,7 @@ import { getUser } from "../lib/auth"
 import { query, withTransaction } from "../lib/db"
 import { parseEuroToCents } from "../lib/money"
 import { boardHref } from "../lib/list-query"
-import { givenName } from "../lib/names"
+import { givenName, hasGivenAndFamilyName } from "../lib/names"
 import { appendLog, sealApplication } from "../lib/seal"
 
 function applicationId(formData) {
@@ -44,9 +44,19 @@ export async function addApplication(formData) {
   if (!user?.can_write) redirect("/?hinweis=recht")
 
   const applicationDate = String(formData.get("applicationDate") ?? "").trim()
-  const applicant = givenName(cleanName(formData.get("applicant")))
+  const applicant = cleanName(formData.get("applicant"))
   const purpose = String(formData.get("purpose") ?? "").trim()
   const amountCents = parseEuroToCents(formData.get("amount"))
+
+  if (applicant.length > 0 && applicant.length <= 120 && !hasGivenAndFamilyName(applicant)) {
+    redirect(
+      boardHref({
+        sort: String(formData.get("sort") ?? ""),
+        filter: String(formData.get("filter") ?? ""),
+        hinweis: "nachname",
+      }),
+    )
+  }
 
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(applicationDate) ||
@@ -117,7 +127,7 @@ export async function updateApplication(formData) {
 
   const id = applicationId(formData)
   const applicationDate = String(formData.get("applicationDate") ?? "").trim()
-  const applicant = givenName(cleanName(formData.get("applicant")))
+  const applicant = cleanName(formData.get("applicant"))
   const purpose = String(formData.get("purpose") ?? "").trim()
   const amountCents = parseEuroToCents(formData.get("amount"))
   const path = (hinweis) =>
@@ -126,6 +136,10 @@ export async function updateApplication(formData) {
       filter: String(formData.get("filter") ?? ""),
       hinweis,
     })
+
+  if (applicant.length > 0 && applicant.length <= 120 && !hasGivenAndFamilyName(applicant)) {
+    redirect(path("nachname"))
+  }
 
   if (
     !id ||

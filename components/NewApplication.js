@@ -107,7 +107,8 @@ export default function NewApplication({ sort, filter, openOnError = false }) {
                             name="applicant"
                             maxLength={120}
                             required
-                            autoComplete="given-name"
+                            placeholder="Vor- und Nachname"
+                            autoComplete="name"
                           />
                         </div>
                         <div className="col-12">
