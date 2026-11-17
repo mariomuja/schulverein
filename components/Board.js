@@ -41,16 +41,16 @@ function matchesFilter(application, filter) {
 
 function ExportLinks({ sort, primary = false }) {
   const className = primary
-    ? "btn btn-sm btn-primary"
+    ? "btn btn-sm btn-primary d-inline-flex align-items-center gap-1"
     : "btn btn-sm btn-outline-secondary export-btn d-inline-flex align-items-center"
   return (
     <>
       <a className={className} href={`/export?sort=${sort}`}>
-        {primary ? null : <i className="bi bi-download" aria-hidden="true" />}
+        <i className="bi bi-download" aria-hidden="true" />
         CSV exportieren
       </a>
       <a className={className} href="/export/pdf">
-        {primary ? null : <i className="bi bi-download" aria-hidden="true" />}
+        <i className="bi bi-download" aria-hidden="true" />
         PDF seit Kassenprüfung
       </a>
     </>
