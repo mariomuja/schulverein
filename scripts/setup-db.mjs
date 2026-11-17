@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto"
+import { createHash, randomBytes } from "crypto"
 import fs from "fs"
 import pg from "pg"
 
@@ -13,6 +13,10 @@ function loadEnv(file) {
 
 function token() {
   return randomBytes(32).toString("base64url")
+}
+
+function hashSecret(value) {
+  return createHash("sha256").update(value).digest("hex")
 }
 
 const users = [
@@ -36,7 +40,7 @@ if (!directUrl || !databaseUrl) {
   process.exit(1)
 }
 
-const ssl = { rejectUnauthorized: false }
+const ssl = { rejectUnauthorized: true }
 const admin = new pg.Client({ connectionString: directUrl, ssl })
 await admin.connect()
 const existing = await admin.query(
@@ -50,7 +54,10 @@ if (existing.rowCount === 0) {
 }
 await admin.end()
 
-const db = new pg.Client({ connectionString: databaseUrl, ssl })
+const db = new pg.Client({
+  connectionString: process.env.DATABASE_URL_OWNER || databaseUrl,
+  ssl,
+})
 await db.connect()
 await db.query(`
   CREATE TABLE IF NOT EXISTS users (
@@ -210,13 +217,17 @@ await db.query(
    FOR EACH ROW EXECUTE FUNCTION schulverein_protect_vote()`,
 )
 
+const freshLinks = []
 for (const [name, roleLabel, canWrite, isTreasurer, sortOrder] of users) {
-  await db.query(
+  const raw = token()
+  const inserted = await db.query(
     `INSERT INTO users (name, role_label, can_write, is_treasurer, sort_order, login_token)
      VALUES ($1, $2, $3, $4, $5, $6)
-     ON CONFLICT (name) DO NOTHING`,
-    [name, roleLabel, canWrite, isTreasurer, sortOrder, token()],
+     ON CONFLICT (name) DO NOTHING
+     RETURNING name`,
+    [name, roleLabel, canWrite, isTreasurer, sortOrder, hashSecret(raw)],
   )
+  if (inserted.rowCount > 0) freshLinks.push({ name, roleLabel, canWrite, raw })
 }
 
 const inserted = await db.query(
@@ -240,17 +251,14 @@ if (inserted.rows[0]) {
   console.log("Erstantrag angelegt")
 }
 
-const links = await db.query(
-  `SELECT name, role_label, can_write, login_token
-   FROM users
-   ORDER BY sort_order`,
-)
 await db.end()
 
-const lines = links.rows.map((row) => {
-  const right = row.can_write ? "schreiben" : "lesen"
-  const role = row.role_label ? ` (${row.role_label})` : ""
-  return `${row.name}${role} [${right}]\n/${row.login_token}`
+const lines = freshLinks.map((row) => {
+  const right = row.canWrite ? "schreiben" : "lesen"
+  const role = row.roleLabel ? ` (${row.roleLabel})` : ""
+  return `${row.name}${role} [${right}]\n/${row.raw}`
 })
-fs.writeFileSync("tokens.local.txt", `${lines.join("\n\n")}\n`)
-console.log(`${links.rowCount} Benutzer, Links nur in tokens.local.txt`)
+if (lines.length > 0) {
+  fs.writeFileSync("tokens.local.txt", `${lines.join("\n\n")}\n`)
+}
+console.log(`${freshLinks.length} neue Benutzer, Tokens nur als Hash in der Datenbank`)

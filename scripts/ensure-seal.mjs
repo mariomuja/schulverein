@@ -37,8 +37,8 @@ function sealProof(record) {
 }
 
 const db = new pg.Client({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  connectionString: process.env.DATABASE_URL_OWNER || process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: true },
 })
 await db.connect()
 

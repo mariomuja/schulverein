@@ -11,6 +11,7 @@ import { parseEuroToCents } from "../lib/money"
 import { boardHref } from "../lib/list-query"
 import { givenName, hasGivenAndFamilyName } from "../lib/names"
 import { appendLog, sealApplication } from "../lib/seal"
+import { hashSecret } from "../lib/secret"
 
 function applicationId(formData) {
   const id = Number(formData.get("applicationId"))
@@ -252,7 +253,7 @@ export async function addUser(formData) {
            $4
          )
          RETURNING id`,
-        [name, roleLabel || null, canWrite, token],
+        [name, roleLabel || null, canWrite, hashSecret(token)],
       )
       await appendLog(q, {
         user,
@@ -323,14 +324,14 @@ export async function renewUserToken(formData) {
   if (!id) redirect("/?hinweis=benutzer")
 
   const token = randomBytes(32).toString("base64url")
-  const sessionId = (await cookies()).get("sv_session")?.value ?? ""
+  const sessionId = hashSecret((await cookies()).get("sv_session")?.value ?? "")
   const updated = await withTransaction(async (q) => {
     const result = await q(
       `UPDATE users
        SET login_token = $2
        WHERE id = $1 AND can_write AND login_token IS NOT NULL
        RETURNING name`,
-      [id, token],
+      [id, hashSecret(token)],
     )
     if (result.rowCount === 0) return result
     await q(`DELETE FROM sessions WHERE user_id = $1 AND id IS DISTINCT FROM $2`, [id, sessionId])
@@ -385,7 +386,7 @@ export async function logout() {
   const jar = await cookies()
   const sessionId = jar.get("sv_session")?.value
   if (sessionId) {
-    await query(`DELETE FROM sessions WHERE id = $1`, [sessionId])
+    await query(`DELETE FROM sessions WHERE id = $1`, [hashSecret(sessionId)])
   }
   jar.set("sv_session", "", {
     httpOnly: true,
