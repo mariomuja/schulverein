@@ -13,6 +13,10 @@ import StatusIcon from "./StatusIcon"
 import VoteControl from "./VoteControl"
 
 const MIN_COLUMN = 56
+const PURPOSE_INDEX = 2
+const COLUMN_PARTS = [8, 12, 32, 8, 9]
+const VOTER_PART = 5.5
+const TAIL_PARTS = [8, 10]
 
 function ColumnHeading({ text }) {
   const words = String(text).split(/\s+/).filter(Boolean)
@@ -77,25 +81,27 @@ function columnFloor(header, table, userId) {
   return floor
 }
 
-function fitHeaderWords(table, userId) {
-  const headers = [...table.querySelectorAll("thead th")]
-  const elements = [...table.querySelectorAll("col")]
-  if (headers.length === 0 || headers.length !== elements.length) return false
-  const floors = headers.map((header) => columnFloor(header, table, userId))
-  const widths = headers.map((header) => header.getBoundingClientRect().width)
-  const deficit = widths.reduce(
-    (sum, width, index) => sum + Math.max(0, floors[index] - width),
-    0,
-  )
-  if (deficit < 1) return false
+function partWidths(containerWidth, columnCount) {
+  const voterCount = columnCount - COLUMN_PARTS.length - TAIL_PARTS.length
+  const parts = [
+    ...COLUMN_PARTS,
+    ...Array.from({ length: voterCount }, () => VOTER_PART),
+    ...TAIL_PARTS,
+  ]
+  const total = parts.reduce((sum, part) => sum + part, 0)
+  return parts.map((part) => (containerWidth * part) / total)
+}
+
+function spreadToFloors(widths, floors) {
   const next = widths.map((width, index) => Math.max(width, floors[index]))
-  let remaining = next.reduce((sum, width) => sum + width, 0) - widths.reduce((sum, width) => sum + width, 0)
+  let remaining =
+    next.reduce((sum, width) => sum + width, 0) - widths.reduce((sum, width) => sum + width, 0)
   const donors = next
     .map((width, index) => ({ index, slack: width - floors[index] }))
     .filter((donor) => donor.slack > 1)
     .sort((a, b) => {
-      if (a.index === 2) return -1
-      if (b.index === 2) return 1
+      if (a.index === PURPOSE_INDEX) return -1
+      if (b.index === PURPOSE_INDEX) return 1
       return b.slack - a.slack
     })
   for (const donor of donors) {
@@ -104,10 +110,44 @@ function fitHeaderWords(table, userId) {
     next[donor.index] -= give
     remaining -= give
   }
+  return next
+}
+
+function layoutFloors(table, userId) {
+  const headers = [...table.querySelectorAll("thead th")]
+  const floors = headers.map((header) => columnFloor(header, table, userId))
+  const container = table.closest(".table-responsive")?.clientWidth ?? 0
+  if (container < 1 || headers.length < COLUMN_PARTS.length + TAIL_PARTS.length) return floors
+  const baseline = spreadToFloors(partWidths(container, headers.length), floors)
+  const next = floors.slice()
+  next[PURPOSE_INDEX] = Math.max(floors[PURPOSE_INDEX], baseline[PURPOSE_INDEX] * 2)
+  return next
+}
+
+function fitHeaderWords(table, userId) {
+  const headers = [...table.querySelectorAll("thead th")]
+  const elements = [...table.querySelectorAll("col")]
+  if (headers.length === 0 || headers.length !== elements.length) return false
+  const container = table.closest(".table-responsive")?.clientWidth ?? 0
+  if (container < 1) return false
+  const rendered = headers.map((header) => header.getBoundingClientRect().width)
+  if (rendered.some((width) => width < 1)) return false
+  const next = spreadToFloors(rendered, layoutFloors(table, userId))
   const total = next.reduce((sum, width) => sum + width, 0)
-  next.forEach((width, index) => {
-    elements[index].style.width = `${(width / total) * 100}%`
-  })
+  const stable = next.every((width, index) => Math.abs(width - rendered[index]) < 2)
+  const tableWidth = table.getBoundingClientRect().width
+  if (stable && (total <= container + 2 || Math.abs(tableWidth - total) < 2)) return false
+  if (total > container + 1) {
+    table.style.width = `${Math.ceil(total)}px`
+    next.forEach((width, index) => {
+      elements[index].style.width = `${width}px`
+    })
+  } else {
+    table.style.width = "100%"
+    next.forEach((width, index) => {
+      elements[index].style.width = `${(width / total) * 100}%`
+    })
+  }
   return true
 }
 
@@ -224,7 +264,7 @@ export default function ApplicationsTable({
       return percents
     }
 
-    const floors = headers.map((header) => columnFloor(header, table, user.id))
+    const floors = layoutFloors(table, user.id)
 
     function onMove(moveEvent) {
       if (moveEvent.pointerId !== event.pointerId) return
