@@ -60,7 +60,7 @@ await db.query(`
     can_write BOOLEAN NOT NULL DEFAULT FALSE,
     is_treasurer BOOLEAN NOT NULL DEFAULT FALSE,
     sort_order INTEGER NOT NULL,
-    login_token TEXT NOT NULL UNIQUE,
+    login_token TEXT UNIQUE,
     token_used_at TIMESTAMPTZ
   );
   CREATE TABLE IF NOT EXISTS sessions (
@@ -127,6 +127,7 @@ await db.query(`
     detail TEXT NOT NULL
   );
 `)
+await db.query(`ALTER TABLE users ALTER COLUMN login_token DROP NOT NULL`)
 
 await db.query(`
   CREATE OR REPLACE FUNCTION schulverein_reject_change()
@@ -252,4 +253,4 @@ const lines = links.rows.map((row) => {
   return `${row.name}${role} [${right}]\n/${row.login_token}`
 })
 fs.writeFileSync("tokens.local.txt", `${lines.join("\n\n")}\n`)
-console.log(lines.join("\n\n"))
+console.log(`${links.rowCount} Benutzer, Links nur in tokens.local.txt`)

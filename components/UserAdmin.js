@@ -2,9 +2,9 @@
 
 import { useEffect, useId, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { addUser, removeUser } from "../app/actions"
+import { addUser, deactivateUserToken, removeUser, renewUserToken } from "../app/actions"
 import { givenName } from "../lib/names"
-import CopyLink from "./CopyLink"
+import CopyTokenButton from "./CopyTokenButton"
 
 const hints = {
   benutzer: "Der Benutzer konnte nicht gespeichert werden. Bitte den Namen prüfen.",
@@ -19,6 +19,12 @@ export default function UserAdmin({ accounts }) {
   const dialogRef = useRef(null)
   const addFormRef = useRef(null)
   const [open, setOpen] = useState(Boolean(message))
+  const [issued, setIssued] = useState(null)
+
+  function close() {
+    setIssued(null)
+    setOpen(false)
+  }
 
   useEffect(() => {
     if (message) setOpen(true)
@@ -31,7 +37,7 @@ export default function UserAdmin({ accounts }) {
     document.body.classList.add("modal-open")
 
     function onKeyDown(event) {
-      if (event.key === "Escape") setOpen(false)
+      if (event.key === "Escape") close()
     }
 
     document.addEventListener("keydown", onKeyDown)
@@ -60,12 +66,8 @@ export default function UserAdmin({ accounts }) {
       </button>
       {open ? (
         <>
-          <div className="modal-backdrop fade show" onClick={() => setOpen(false)} />
-          <div
-            className="modal fade show d-block"
-            role="presentation"
-            onClick={() => setOpen(false)}
-          >
+          <div className="modal-backdrop fade show" onClick={close} />
+          <div className="modal fade show d-block" role="presentation" onClick={close}>
             <div
               ref={dialogRef}
               className="modal-dialog modal-dialog-scrollable modal-lg"
@@ -84,7 +86,7 @@ export default function UserAdmin({ accounts }) {
                     className="btn-close"
                     type="button"
                     aria-label="Schließen"
-                    onClick={() => setOpen(false)}
+                    onClick={close}
                   />
                 </div>
                 <div className="modal-body">
@@ -93,32 +95,65 @@ export default function UserAdmin({ accounts }) {
                       {message}
                     </div>
                   ) : null}
+                  {issued ? (
+                    <div className="alert alert-info d-flex flex-wrap align-items-center gap-2" role="status">
+                      <span>
+                        Anmeldelink für {givenName(issued.name)} ist bereit. Er wird nicht angezeigt
+                        und nur jetzt zum Kopieren angeboten.
+                      </span>
+                      <CopyTokenButton url={issued.url} />
+                    </div>
+                  ) : null}
                   <ul className="list-group list-group-flush mb-3">
                     {accounts.map((account) => (
                       <li className="list-group-item px-0" key={account.id}>
-                        <div className="d-flex flex-column flex-sm-row justify-content-between gap-2">
-                          <div>
-                            <div className="fw-semibold">{givenName(account.name)}</div>
-                            <div className="small text-secondary">
-                              {account.roleLabel ? `${account.roleLabel} · ` : ""}
-                              {account.canWrite ? "Schreibrecht" : "Leserecht"}
-                            </div>
-                          </div>
+                        <div className="fw-semibold">{givenName(account.name)}</div>
+                        <div className="small text-secondary mb-2">
+                          {account.roleLabel ? `${account.roleLabel} · ` : ""}
+                          {account.canWrite ? "Schreibrecht" : "Leserecht"}
+                          {account.canWrite && !account.tokenActive ? " · Token deaktiviert" : ""}
+                        </div>
+                        <div className="d-flex flex-wrap gap-2">
+                          {account.canWrite && account.tokenActive ? (
+                            <>
+                              <form
+                                action={async (formData) => {
+                                  await deactivateUserToken(formData)
+                                  setIssued((current) =>
+                                    current?.id === account.id ? null : current,
+                                  )
+                                }}
+                              >
+                                <input type="hidden" name="userId" value={account.id} />
+                                <button className="btn btn-outline-secondary btn-sm" type="submit">
+                                  Token deaktivieren
+                                </button>
+                              </form>
+                              <form
+                                action={async (formData) => {
+                                  const renewed = await renewUserToken(formData)
+                                  if (renewed?.loginUrl) setIssued(renewed)
+                                }}
+                              >
+                                <input type="hidden" name="userId" value={account.id} />
+                                <button className="btn btn-outline-primary btn-sm" type="submit">
+                                  Neues Token
+                                </button>
+                              </form>
+                            </>
+                          ) : null}
                           {account.hasVoted ? (
-                            <div className="small text-secondary align-self-sm-center">
+                            <span className="small text-secondary align-self-center">
                               Hat bereits abgestimmt
-                            </div>
+                            </span>
                           ) : (
-                            <form action={removeUser} className="align-self-sm-center">
+                            <form action={removeUser}>
                               <input type="hidden" name="userId" value={account.id} />
                               <button className="btn btn-outline-danger btn-sm" type="submit">
                                 Entfernen
                               </button>
                             </form>
                           )}
-                        </div>
-                        <div className="mt-2">
-                          <CopyLink href={account.loginUrl} />
                         </div>
                       </li>
                     ))}
@@ -127,8 +162,11 @@ export default function UserAdmin({ accounts }) {
                   <form
                     ref={addFormRef}
                     action={async (formData) => {
-                      await addUser(formData)
-                      addFormRef.current?.reset()
+                      const created = await addUser(formData)
+                      if (created?.loginUrl) {
+                        addFormRef.current?.reset()
+                        setIssued(created)
+                      }
                     }}
                     className="row g-3"
                   >

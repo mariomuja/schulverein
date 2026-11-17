@@ -4,6 +4,7 @@ import { randomBytes } from "crypto"
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { requestOrigin } from "../lib/account-links"
 import { getUser } from "../lib/auth"
 import { query, withTransaction } from "../lib/db"
 import { parseEuroToCents } from "../lib/money"
@@ -239,21 +240,113 @@ export async function addUser(formData) {
     redirect("/?hinweis=benutzer")
   }
 
+  const token = randomBytes(32).toString("base64url")
+  let created
   try {
-    await query(
-      `INSERT INTO users (name, role_label, can_write, is_treasurer, sort_order, login_token)
-       VALUES (
-         $1, $2, $3, FALSE,
-         (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM users),
-         $4
-       )`,
-      [name, roleLabel || null, canWrite, randomBytes(32).toString("base64url")],
-    )
+    created = await withTransaction(async (q) => {
+      const inserted = await q(
+        `INSERT INTO users (name, role_label, can_write, is_treasurer, sort_order, login_token)
+         VALUES (
+           $1, $2, $3, FALSE,
+           (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM users),
+           $4
+         )
+         RETURNING id`,
+        [name, roleLabel || null, canWrite, token],
+      )
+      await appendLog(q, {
+        user,
+        action: "benutzer_angelegt",
+        detail: `${name}, ${canWrite ? "Schreibrecht" : "Leserecht"}.`,
+      })
+      return inserted.rows[0]
+    })
   } catch (error) {
     if (error?.code === "23505") redirect("/?hinweis=benutzer")
     throw error
   }
   revalidatePath("/")
+  return { id: created.id, name, loginUrl: `${await requestOrigin()}/${token}` }
+}
+
+function userId(formData) {
+  const id = Number(formData.get("userId"))
+  if (!Number.isInteger(id) || id <= 0) return null
+  return id
+}
+
+async function assertActiveWriter() {
+  const user = await getUser()
+  if (!user?.can_write) redirect("/?hinweis=recht")
+  const active = await query(
+    `SELECT login_token IS NOT NULL AS token_active FROM users WHERE id = $1`,
+    [user.id],
+  )
+  if (!active.rows[0]?.token_active) redirect("/?hinweis=recht")
+  return user
+}
+
+export async function deactivateUserToken(formData) {
+  const user = await assertActiveWriter()
+
+  const id = userId(formData)
+  if (!id) redirect("/?hinweis=benutzer")
+
+  const updated = await withTransaction(async (q) => {
+    const result = await q(
+      `UPDATE users
+       SET login_token = NULL
+       WHERE id = $1 AND can_write AND login_token IS NOT NULL
+       RETURNING name`,
+      [id],
+    )
+    if (result.rowCount === 0) return result
+    await q(`DELETE FROM sessions WHERE user_id = $1`, [id])
+    await appendLog(q, {
+      user,
+      action: "token_deaktiviert",
+      detail: `Anmeldetoken für ${result.rows[0].name} deaktiviert.`,
+    })
+    return result
+  })
+  if (updated.rowCount === 0) {
+    const exists = await query(`SELECT id FROM users WHERE id = $1`, [id])
+    redirect(exists.rows[0] ? "/?hinweis=recht" : "/?hinweis=benutzer")
+  }
+  revalidatePath("/")
+}
+
+export async function renewUserToken(formData) {
+  const user = await assertActiveWriter()
+
+  const id = userId(formData)
+  if (!id) redirect("/?hinweis=benutzer")
+
+  const token = randomBytes(32).toString("base64url")
+  const sessionId = (await cookies()).get("sv_session")?.value ?? ""
+  const updated = await withTransaction(async (q) => {
+    const result = await q(
+      `UPDATE users
+       SET login_token = $2
+       WHERE id = $1 AND can_write AND login_token IS NOT NULL
+       RETURNING name`,
+      [id, token],
+    )
+    if (result.rowCount === 0) return result
+    await q(`DELETE FROM sessions WHERE user_id = $1 AND id IS DISTINCT FROM $2`, [id, sessionId])
+    await appendLog(q, {
+      user,
+      action: "token_erneuert",
+      detail: `Neues Anmeldetoken für ${result.rows[0].name} erstellt.`,
+    })
+    return result
+  })
+  if (updated.rowCount === 0) {
+    const exists = await query(`SELECT id FROM users WHERE id = $1`, [id])
+    redirect(exists.rows[0] ? "/?hinweis=recht" : "/?hinweis=benutzer")
+  }
+  revalidatePath("/")
+  return { id, name: updated.rows[0].name, loginUrl: `${await requestOrigin()}/${token}` }
 }
 
 export async function removeUser(formData) {
