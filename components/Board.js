@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { addApplication } from "../app/actions"
 import { boardHref } from "../lib/list-query"
 import { formatEuro, formatGermanDate } from "../lib/money"
 import { givenName } from "../lib/names"
@@ -8,6 +7,7 @@ import AuditDateForm from "./AuditDateForm"
 import CloseControl from "./CloseControl"
 import DateSort from "./DateSort"
 import EditApplication from "./EditApplication"
+import NewApplication from "./NewApplication"
 import RemoveApplication from "./RemoveApplication"
 import StatusIcon from "./StatusIcon"
 import VoteControl from "./VoteControl"
@@ -93,20 +93,29 @@ export default function Board({ user, data, hinweis, sort, filter = "" }) {
           </a>
         </div>
 
-        <div className="d-flex flex-wrap gap-2" role="group" aria-label="Förderanträge filtern">
-          {filters.map((entry) => {
-            const active = entry.id === filter
-            return (
-              <Link
-                key={entry.id || "alle"}
-                className={`btn btn-sm ${active ? "btn-secondary" : "btn-outline-secondary"}`}
-                href={boardHref({ sort, filter: entry.id })}
-                aria-current={active ? "page" : undefined}
-              >
-                {entry.label}
-              </Link>
-            )
-          })}
+        <div className="d-flex flex-wrap align-items-center gap-2 w-100">
+          <div className="d-flex flex-wrap gap-2" role="group" aria-label="Förderanträge filtern">
+            {filters.map((entry) => {
+              const active = entry.id === filter
+              return (
+                <Link
+                  key={entry.id || "alle"}
+                  className={`btn btn-sm ${active ? "btn-secondary" : "btn-outline-secondary"}`}
+                  href={boardHref({ sort, filter: entry.id })}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {entry.label}
+                </Link>
+              )
+            })}
+          </div>
+          {user.can_write ? (
+            <NewApplication
+              sort={sort}
+              filter={filter}
+              openOnError={hinweis === "antrag"}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -178,72 +187,6 @@ export default function Board({ user, data, hinweis, sort, filter = "" }) {
       </div>
       </>
       )}
-
-      {user.can_write ? (
-        <form action={addApplication} className="card shadow-sm mt-3">
-          <div className="card-body">
-            <h2 className="h5">Neuer Förderantrag</h2>
-            <div className="row g-3">
-              <div className="col-12 col-md-4">
-                <label className="form-label" htmlFor="applicationDate">
-                  Datum
-                </label>
-                <input
-                  id="applicationDate"
-                  className="form-control"
-                  type="date"
-                  name="applicationDate"
-                  required
-                />
-              </div>
-              <div className="col-12 col-md-8">
-                <label className="form-label" htmlFor="applicant">
-                  Antragsteller
-                </label>
-                <input
-                  id="applicant"
-                  className="form-control"
-                  name="applicant"
-                  maxLength={120}
-                  required
-                  autoComplete="name"
-                />
-              </div>
-              <div className="col-12">
-                <label className="form-label" htmlFor="purpose">
-                  Zweck
-                </label>
-                <textarea
-                  id="purpose"
-                  className="form-control"
-                  name="purpose"
-                  rows={3}
-                  maxLength={500}
-                  required
-                />
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label" htmlFor="amount">
-                  Betrag in EUR
-                </label>
-                <input
-                  id="amount"
-                  className="form-control"
-                  name="amount"
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  required
-                />
-              </div>
-              <div className="col-12">
-                <button className="btn btn-primary save-btn" type="submit">
-                  Antrag hinzufügen
-                </button>
-              </div>
-            </div>
-          </div>
-        </form>
-      ) : null}
     </>
   )
 }

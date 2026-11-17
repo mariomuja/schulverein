@@ -56,7 +56,13 @@ export async function addApplication(formData) {
     purpose.length > 500 ||
     amountCents == null
   ) {
-    redirect("/?hinweis=antrag")
+    redirect(
+      boardHref({
+        sort: String(formData.get("sort") ?? ""),
+        filter: String(formData.get("filter") ?? ""),
+        hinweis: "antrag",
+      }),
+    )
   }
 
   await withTransaction(async (q) => {
