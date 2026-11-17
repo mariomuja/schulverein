@@ -12,7 +12,7 @@ export default function CloseControl({ application, user }) {
             <span className="d-block">{formatGermanDateTime(application.sealedAt)}</span>
           ) : null}
           {application.sealedByName ? (
-            <span className="d-block">{application.sealedByName}</span>
+            <span className="d-block">von {application.sealedByName}</span>
           ) : null}
         </div>
       </div>
