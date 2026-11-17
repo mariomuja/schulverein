@@ -338,7 +338,9 @@ export default function ApplicationsTable({
                 <ColumnHeading text="Zweck" />
               </th>
               <th className="text-end">
-                <ColumnHeading text="Höchstbetrag" />
+                <span className="col-head-word">Höchst-</span>
+                <br />
+                <span className="col-head-word">betrag</span>
               </th>
               <th>
                 <ColumnHeading text="Beleg" />
