@@ -404,4 +404,21 @@ body.is-resizing-columns * {
     min-height: 32px;
     font-size: 0.8125rem;
   }
+
+  .applications-table {
+    font-size: 0.8125rem;
+  }
+
+  .applications-table .btn,
+  .applications-table .vote-btn,
+  .applications-table .close-btn,
+  .applications-table .remove-application,
+  .applications-table .edit-application,
+  .applications-table .receipt-name {
+    font-size: 1em;
+  }
+
+  .applications-table .fs-4 {
+    font-size: 1.22rem;
+  }
 }
