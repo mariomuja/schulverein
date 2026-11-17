@@ -124,6 +124,15 @@ await db.query(`
     decision TEXT NOT NULL CHECK (decision IN ('yes', 'no', 'none')),
     PRIMARY KEY (record_id, user_id)
   );
+  CREATE TABLE IF NOT EXISTS application_files (
+    id SERIAL PRIMARY KEY,
+    application_id INTEGER NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+    file_name TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    content BYTEA NOT NULL,
+    uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
   CREATE TABLE IF NOT EXISTS audit_log (
     id SERIAL PRIMARY KEY,
     occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -216,6 +225,24 @@ await db.query(`
   END;
   $$;
 
+  CREATE OR REPLACE FUNCTION schulverein_protect_file()
+  RETURNS trigger
+  LANGUAGE plpgsql
+  AS $$
+  DECLARE
+    app_id INTEGER;
+  BEGIN
+    app_id := CASE WHEN TG_OP = 'DELETE' THEN OLD.application_id ELSE NEW.application_id END;
+    IF EXISTS (SELECT 1 FROM vote_records WHERE application_id = app_id) THEN
+      RAISE EXCEPTION 'revisionssicher: belege einer abgeschlossenen abstimmung bleiben unverändert';
+    END IF;
+    IF TG_OP = 'DELETE' THEN
+      RETURN OLD;
+    END IF;
+    RETURN NEW;
+  END;
+  $$;
+
   CREATE OR REPLACE FUNCTION schulverein_protect_vote()
   RETURNS trigger
   LANGUAGE plpgsql
@@ -267,6 +294,12 @@ await db.query(
   `CREATE TRIGGER vote_record_ballots_extend
    BEFORE INSERT ON vote_record_ballots
    FOR EACH ROW EXECUTE FUNCTION schulverein_protect_ballot()`,
+)
+await db.query(`DROP TRIGGER IF EXISTS application_files_sealed ON application_files`)
+await db.query(
+  `CREATE TRIGGER application_files_sealed
+   BEFORE INSERT OR UPDATE OR DELETE ON application_files
+   FOR EACH ROW EXECUTE FUNCTION schulverein_protect_file()`,
 )
 
 const freshLinks = []

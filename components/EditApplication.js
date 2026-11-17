@@ -110,7 +110,7 @@ export default function EditApplication({ application, sort, filter, onClose }) 
                 </div>
                 <div className="col-12 col-md-6">
                   <label className="form-label" htmlFor={amountId}>
-                    Betrag in EUR
+                    Höchstbetrag in EUR
                   </label>
                   <input
                     id={amountId}
@@ -120,6 +120,12 @@ export default function EditApplication({ application, sort, filter, onClose }) 
                     defaultValue={formatEuro(application.amount_cents)}
                     required
                   />
+                  <div className="form-text">
+                    Solange die Abstimmung nicht abgeschlossen ist, kann der
+                    Höchstbetrag geändert werden, auch wenn der Antrag schon
+                    genehmigt ist. Der tatsächliche Betrag aus der Rechnung darf
+                    niedriger sein.
+                  </div>
                 </div>
               </div>
             </div>

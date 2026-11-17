@@ -21,6 +21,8 @@ const hints = {
   geaendert: "Eine abgeschlossene Abstimmung kann nicht mehr geändert werden.",
   versiegelt:
     "Eine abgeschlossene Abstimmung bleibt festgeschrieben und kann nicht wieder geöffnet werden.",
+  beleg:
+    "Der Beleg konnte nicht gespeichert werden. Erlaubt sind Fotos und PDF bis 4 MB, höchstens 12 Dateien je Antrag.",
 }
 
 const filters = [

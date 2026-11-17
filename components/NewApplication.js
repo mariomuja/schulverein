@@ -126,7 +126,7 @@ export default function NewApplication({ sort, filter, openOnError = false }) {
                         </div>
                         <div className="col-12 col-md-6">
                           <label className="form-label" htmlFor={amountId}>
-                            Betrag in EUR
+                            Höchstbetrag in EUR
                           </label>
                           <input
                             id={amountId}

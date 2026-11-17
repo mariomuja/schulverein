@@ -11,6 +11,7 @@ import { parseEuroToCents } from "../lib/money"
 import { boardHref } from "../lib/list-query"
 import { givenName, hasGivenAndFamilyName } from "../lib/names"
 import { appendLog, sealApplication } from "../lib/seal"
+import { acceptReceipt, maxReceipts } from "../lib/receipts"
 import { hashSecret } from "../lib/secret"
 
 function applicationId(formData) {
@@ -176,6 +177,87 @@ export async function updateApplication(formData) {
     return result
   })
   if (updated.rowCount === 0) redirect(path("geaendert"))
+  revalidatePath("/")
+}
+
+export async function addReceipts(formData) {
+  const user = await getUser()
+  if (!user?.can_write) redirect("/?hinweis=recht")
+
+  const id = applicationId(formData)
+  const incoming = formData
+    .getAll("files")
+    .filter((file) => file && typeof file.arrayBuffer === "function" && file.size > 0)
+  if (!id || incoming.length === 0) redirect("/?hinweis=beleg")
+
+  const prepared = []
+  for (const file of incoming) {
+    const accepted = acceptReceipt(file)
+    if (!accepted) redirect("/?hinweis=beleg")
+    prepared.push({ ...accepted, bytes: Buffer.from(await file.arrayBuffer()) })
+  }
+
+  await withTransaction(async (q) => {
+    const open = await q(
+      `SELECT 1
+       FROM applications a
+       WHERE a.id = $1
+         AND a.voting_closed = FALSE
+         AND NOT EXISTS (SELECT 1 FROM vote_records r WHERE r.application_id = a.id)
+       FOR UPDATE`,
+      [id],
+    )
+    if (open.rowCount === 0) redirect("/?hinweis=geaendert")
+    const count = await q(
+      `SELECT count(*)::int AS n FROM application_files WHERE application_id = $1`,
+      [id],
+    )
+    if (count.rows[0].n + prepared.length > maxReceipts) redirect("/?hinweis=beleg")
+    for (const file of prepared) {
+      await q(
+        `INSERT INTO application_files (application_id, file_name, content_type, content, uploaded_by)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, file.name, file.type, file.bytes, user.id],
+      )
+      await appendLog(q, {
+        user,
+        action: "beleg_hinzugefuegt",
+        applicationId: id,
+        detail: file.name,
+      })
+    }
+  })
+  revalidatePath("/")
+}
+
+export async function removeReceipt(formData) {
+  const user = await getUser()
+  if (!user?.can_write) redirect("/?hinweis=recht")
+
+  const id = Number(formData.get("fileId"))
+  if (!Number.isInteger(id) || id <= 0) redirect("/?hinweis=beleg")
+
+  const removed = await withTransaction(async (q) => {
+    const result = await q(
+      `DELETE FROM application_files f
+       USING applications a
+       WHERE f.id = $1
+         AND f.application_id = a.id
+         AND a.voting_closed = FALSE
+         AND NOT EXISTS (SELECT 1 FROM vote_records r WHERE r.application_id = a.id)
+       RETURNING f.application_id, f.file_name`,
+      [id],
+    )
+    if (result.rowCount === 0) return result
+    await appendLog(q, {
+      user,
+      action: "beleg_entfernt",
+      applicationId: result.rows[0].application_id,
+      detail: result.rows[0].file_name,
+    })
+    return result
+  })
+  if (removed.rowCount === 0) redirect("/?hinweis=geaendert")
   revalidatePath("/")
 }
 

@@ -8,6 +8,7 @@ import CloseControl from "./CloseControl"
 import DateSort from "./DateSort"
 import EditableApplication from "./EditableApplication"
 import RemoveApplication from "./RemoveApplication"
+import Receipts from "./Receipts"
 import StatusIcon from "./StatusIcon"
 import VoteControl from "./VoteControl"
 
@@ -24,7 +25,7 @@ function ColumnHeading({ text }) {
 }
 
 function storageKey(writerCount, columnCount) {
-  if (columnCount === writerCount + 6) return `schulverein-column-widths:${writerCount}`
+  if (columnCount === writerCount + 7) return `schulverein-column-widths:${writerCount}`
   return `schulverein-column-widths:${writerCount}:${columnCount}`
 }
 
@@ -134,7 +135,7 @@ export default function ApplicationsTable({
   const lineRefs = useRef([])
   const resizingRef = useRef(false)
   const columns = voterColumns(applications, writers)
-  const columnCount = columns.length + 6
+  const columnCount = columns.length + 7
 
   useEffect(() => {
     const table = tableRef.current
@@ -278,6 +279,7 @@ export default function ApplicationsTable({
             <col className="col-applicant" />
             <col className="col-purpose" />
             <col className="col-amount" />
+            <col className="col-receipt" />
             {columns.map((writer) => (
               <col className="col-voter" key={writer.id} />
             ))}
@@ -296,7 +298,10 @@ export default function ApplicationsTable({
                 <ColumnHeading text="Zweck" />
               </th>
               <th className="text-end">
-                <ColumnHeading text="Betrag" />
+                <ColumnHeading text="Höchstbetrag" />
+              </th>
+              <th>
+                <ColumnHeading text="Beleg" />
               </th>
               {columns.map((writer) => (
                 <th key={writer.id} data-user-id={writer.id}>
@@ -349,6 +354,9 @@ export default function ApplicationsTable({
                     <td className="purpose">{application.purpose}</td>
                     <td className="text-end text-nowrap">
                       {formatEuro(application.amount_cents)} €
+                    </td>
+                    <td>
+                      <Receipts application={application} user={user} />
                     </td>
                     {columns.map((writer) => {
                       const participant = isVoteParticipant(application, writer.id)

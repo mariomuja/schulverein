@@ -169,6 +169,25 @@ body {
   width: 8%;
 }
 
+.applications-table col.col-receipt {
+  width: 9%;
+}
+
+.applications-table .receipt-add,
+.applications-table .receipt-remove {
+  width: auto;
+  max-width: 100%;
+}
+
+.receipt-add {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.receipt-name {
+  overflow-wrap: anywhere;
+}
+
 .applications-table col.col-voter {
   width: 5.5%;
 }

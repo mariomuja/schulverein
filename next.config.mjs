@@ -30,6 +30,11 @@ if (process.env.NODE_ENV === "production") {
 const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "12mb",
+    },
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }]
   },

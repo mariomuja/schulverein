@@ -5,6 +5,7 @@ import { givenName } from "../lib/names"
 import CloseControl from "./CloseControl"
 import EditableApplication from "./EditableApplication"
 import RemoveApplication from "./RemoveApplication"
+import Receipts from "./Receipts"
 import StatusIcon from "./StatusIcon"
 import VoteControl from "./VoteControl"
 
@@ -41,6 +42,7 @@ export default function ApplicationCards({
                 </div>
               </div>
               <div className="text-end">
+                <div className="small text-secondary">Höchstbetrag</div>
                 <div className="fs-5 fw-semibold text-nowrap">
                   {formatEuro(application.amount_cents)} €
                 </div>
@@ -48,6 +50,10 @@ export default function ApplicationCards({
               </div>
             </div>
             <p className="purpose purpose-mobile mt-2 mb-3">{application.purpose}</p>
+            <div className="mb-3">
+              <div className="small text-secondary mb-1">Beleg</div>
+              <Receipts application={application} user={user} />
+            </div>
             <div className="small text-secondary mb-1">Stimmen</div>
             {application.voters.map((writer) => (
               <div className="border-top py-2" key={writer.id}>
