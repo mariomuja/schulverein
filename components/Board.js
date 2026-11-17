@@ -82,10 +82,12 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
 
       <div className="d-flex flex-column align-items-start gap-2 mb-3">
         <div className="d-flex flex-wrap gap-2">
-          <a className="btn btn-sm btn-outline-secondary" href={`/export?sort=${sort}`}>
+          <a className="btn btn-sm btn-outline-secondary export-btn d-inline-flex align-items-center" href={`/export?sort=${sort}`}>
+            <i className="bi bi-download d-xl-none" aria-hidden="true" />
             CSV exportieren
           </a>
-          <a className="btn btn-sm btn-outline-secondary" href="/export/pdf">
+          <a className="btn btn-sm btn-outline-secondary export-btn d-inline-flex align-items-center" href="/export/pdf">
+            <i className="bi bi-download d-xl-none" aria-hidden="true" />
             PDF seit Kassenprüfung
           </a>
         </div>
