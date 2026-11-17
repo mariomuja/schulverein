@@ -26,6 +26,11 @@ body {
   white-space: normal;
 }
 
+.purpose-mobile {
+  font-weight: 700;
+  color: #0a3d7a;
+}
+
 .date-sort {
   color: inherit;
   font-weight: 600;

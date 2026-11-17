@@ -42,7 +42,7 @@ export default function ApplicationCards({
                 <StatusIcon approved={application.approved} />
               </div>
             </div>
-            <p className="purpose mt-2 mb-3">{application.purpose}</p>
+            <p className="purpose purpose-mobile mt-2 mb-3">{application.purpose}</p>
             <div className="small text-secondary mb-1">Stimmen</div>
             {writers.map((writer) => (
               <div className="border-top py-2" key={writer.id}>
