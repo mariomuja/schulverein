@@ -373,6 +373,15 @@ body.is-resizing-columns * {
   min-height: 44px;
 }
 
+.vote-btn.vote-btn-dim {
+  opacity: 0.45;
+}
+
+.vote-btn.vote-btn-dim:hover,
+.vote-btn.vote-btn-dim:focus-visible {
+  opacity: 1;
+}
+
 @media (max-width: 1199.98px) {
   .vote-btn,
   .close-btn,

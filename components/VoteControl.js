@@ -31,7 +31,7 @@ export default function VoteControl({ application, voter, user }) {
         <input type="hidden" name="applicationId" value={application.id} />
         <input type="hidden" name="decision" value="yes" />
         <button
-          className={`btn vote-btn ${decision === "yes" ? "btn-success" : "btn-outline-success"}`}
+          className={`btn vote-btn ${decision === "yes" ? "btn-success" : "btn-outline-success"}${decision === "no" ? " vote-btn-dim" : ""}`}
           type="submit"
         >
           <VoteLabel text="Ich stimme zu" />
@@ -41,7 +41,7 @@ export default function VoteControl({ application, voter, user }) {
         <input type="hidden" name="applicationId" value={application.id} />
         <input type="hidden" name="decision" value="no" />
         <button
-          className={`btn vote-btn ${decision === "no" ? "btn-danger" : "btn-outline-danger"}`}
+          className={`btn vote-btn ${decision === "no" ? "btn-danger" : "btn-outline-danger"}${decision === "yes" ? " vote-btn-dim" : ""}`}
           type="submit"
         >
           <VoteLabel text="Ich stimme nicht zu" />
