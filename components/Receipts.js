@@ -8,9 +8,30 @@ function isPdf(name) {
   return String(name).toLowerCase().endsWith(".pdf")
 }
 
+const LOUPE_SIZE = 240
+const LOUPE_ZOOM = 3
+
+function moveLoupe(event, url, lens) {
+  if (!lens) return
+  const rect = event.currentTarget.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const y = event.clientY - rect.top
+  if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
+    lens.hidden = true
+    return
+  }
+  lens.hidden = false
+  lens.style.left = `${event.clientX}px`
+  lens.style.top = `${event.clientY}px`
+  lens.style.backgroundImage = `url("${url}")`
+  lens.style.backgroundSize = `${rect.width * LOUPE_ZOOM}px ${rect.height * LOUPE_ZOOM}px`
+  lens.style.backgroundPosition = `${LOUPE_SIZE / 2 - x * LOUPE_ZOOM}px ${LOUPE_SIZE / 2 - y * LOUPE_ZOOM}px`
+}
+
 function ReceiptPreview({ file, onClose }) {
   const titleId = useId()
   const dialogRef = useRef(null)
+  const lensRef = useRef(null)
   const onCloseRef = useRef(onClose)
   const [url, setUrl] = useState(null)
   const [failed, setFailed] = useState(false)
@@ -95,12 +116,24 @@ function ReceiptPreview({ file, onClose }) {
                 <iframe className="receipt-preview-frame" src={url} title={file.name} />
               ) : null}
               {url && !pdf && !failed ? (
-                <img
-                  className="receipt-preview-image"
-                  src={url}
-                  alt={file.name}
-                  onError={() => setFailed(true)}
-                />
+                <div className="receipt-preview-stage">
+                  <img
+                    className="receipt-preview-image"
+                    src={url}
+                    alt={file.name}
+                    onError={() => setFailed(true)}
+                    onPointerMove={(event) => {
+                      if (event.pointerType === "touch") return
+                      moveLoupe(event, url, lensRef.current)
+                    }}
+                    onPointerLeave={() => {
+                      if (lensRef.current) lensRef.current.hidden = true
+                    }}
+                  />
+                  <p className="receipt-loupe-hint text-secondary small text-center mt-2 mb-0">
+                    Zum Vergrößern mit der Maus über den Beleg fahren.
+                  </p>
+                </div>
               ) : null}
             </div>
             <div className="modal-footer">
@@ -111,6 +144,7 @@ function ReceiptPreview({ file, onClose }) {
           </div>
         </div>
       </div>
+      {url && !pdf && !failed ? <div ref={lensRef} className="receipt-loupe" hidden /> : null}
     </>,
     document.body,
   )
