@@ -10,7 +10,6 @@ import VoteControl from "./VoteControl"
 
 export default function ApplicationCards({
   applications,
-  writers,
   user,
   sort,
   filter,
@@ -50,7 +49,7 @@ export default function ApplicationCards({
             </div>
             <p className="purpose purpose-mobile mt-2 mb-3">{application.purpose}</p>
             <div className="small text-secondary mb-1">Stimmen</div>
-            {writers.map((writer) => (
+            {application.voters.map((writer) => (
               <div className="border-top py-2" key={writer.id}>
                 <div className="fw-semibold">{givenName(writer.name)}</div>
                 {writer.role_label ? (

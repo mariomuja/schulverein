@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { formatEuro, formatGermanDate } from "../lib/money"
 import { givenName } from "../lib/names"
+import { isVoteParticipant, voterColumns } from "../lib/voters"
 import CloseControl from "./CloseControl"
 import DateSort from "./DateSort"
 import EditableApplication from "./EditableApplication"
@@ -22,8 +23,9 @@ function ColumnHeading({ text }) {
   ))
 }
 
-function storageKey(writerCount) {
-  return `schulverein-column-widths:${writerCount}`
+function storageKey(writerCount, columnCount) {
+  if (columnCount === writerCount + 6) return `schulverein-column-widths:${writerCount}`
+  return `schulverein-column-widths:${writerCount}:${columnCount}`
 }
 
 function headerFloor(header) {
@@ -110,7 +112,7 @@ function fitHeaderWords(table, userId) {
 
 function readWidths(writerCount, columnCount) {
   try {
-    const saved = JSON.parse(localStorage.getItem(storageKey(writerCount)) ?? "")
+    const saved = JSON.parse(localStorage.getItem(storageKey(writerCount, columnCount)) ?? "")
     if (!Array.isArray(saved) || saved.length !== columnCount) return null
     if (!saved.every((value) => typeof value === "number" && value > 0)) return null
     return saved
@@ -131,7 +133,8 @@ export default function ApplicationsTable({
   const tableRef = useRef(null)
   const lineRefs = useRef([])
   const resizingRef = useRef(false)
-  const columnCount = writers.length + 6
+  const columns = voterColumns(applications, writers)
+  const columnCount = columns.length + 6
 
   useEffect(() => {
     const table = tableRef.current
@@ -255,7 +258,7 @@ export default function ApplicationsTable({
           (header) => header.getBoundingClientRect().width,
         ),
       )
-      localStorage.setItem(storageKey(writers.length), JSON.stringify(percents))
+      localStorage.setItem(storageKey(writers.length, columnCount), JSON.stringify(percents))
     }
 
     line.addEventListener("pointermove", onMove)
@@ -275,7 +278,7 @@ export default function ApplicationsTable({
             <col className="col-applicant" />
             <col className="col-purpose" />
             <col className="col-amount" />
-            {writers.map((writer) => (
+            {columns.map((writer) => (
               <col className="col-voter" key={writer.id} />
             ))}
             <col className="col-approved" />
@@ -295,7 +298,7 @@ export default function ApplicationsTable({
               <th className="text-end">
                 <ColumnHeading text="Betrag" />
               </th>
-              {writers.map((writer) => (
+              {columns.map((writer) => (
                 <th key={writer.id} data-user-id={writer.id}>
                   <div>
                     <ColumnHeading text={givenName(writer.name)} />
@@ -347,15 +350,23 @@ export default function ApplicationsTable({
                     <td className="text-end text-nowrap">
                       {formatEuro(application.amount_cents)} €
                     </td>
-                    {writers.map((writer) => (
-                      <td className="vote-cell" key={writer.id}>
-                        <VoteControl
-                          application={application}
-                          voter={writer}
-                          user={user}
-                        />
-                      </td>
-                    ))}
+                    {columns.map((writer) => {
+                      const participant = isVoteParticipant(application, writer.id)
+                      return (
+                        <td
+                          className={participant ? "vote-cell" : "vote-cell vote-outside"}
+                          key={writer.id}
+                        >
+                          {participant ? (
+                            <VoteControl
+                              application={application}
+                              voter={writer}
+                              user={user}
+                            />
+                          ) : null}
+                        </td>
+                      )
+                    })}
                     <td className="text-center">
                       <StatusIcon approved={application.approved} />
                     </td>

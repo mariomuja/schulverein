@@ -139,7 +139,6 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
         </div>
         <ApplicationCards
           applications={applications}
-          writers={data.writers}
           user={user}
           sort={sort}
           filter={filter}

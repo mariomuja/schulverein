@@ -127,6 +127,10 @@ body {
   overflow: hidden;
 }
 
+.applications-table td.vote-outside {
+  background: #f4f6f8;
+}
+
 .applications-table .remove-application,
 .applications-table .edit-application {
   font-size: 0.75rem;
