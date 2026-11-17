@@ -119,8 +119,14 @@ function layoutFloors(table, userId) {
   const container = table.closest(".table-responsive")?.clientWidth ?? 0
   if (container < 1 || headers.length < COLUMN_PARTS.length + TAIL_PARTS.length) return floors
   const baseline = spreadToFloors(partWidths(container, headers.length), floors)
+  const others = floors.reduce(
+    (sum, width, index) => (index === PURPOSE_INDEX ? sum : sum + width),
+    0,
+  )
+  const doubled = Math.max(floors[PURPOSE_INDEX], baseline[PURPOSE_INDEX] * 2)
+  const room = Math.max(floors[PURPOSE_INDEX], container - others)
   const next = floors.slice()
-  next[PURPOSE_INDEX] = Math.max(floors[PURPOSE_INDEX], baseline[PURPOSE_INDEX] * 2)
+  next[PURPOSE_INDEX] = Math.min(doubled, room)
   return next
 }
 
@@ -132,22 +138,27 @@ function fitHeaderWords(table, userId) {
   if (container < 1) return false
   const rendered = headers.map((header) => header.getBoundingClientRect().width)
   if (rendered.some((width) => width < 1)) return false
-  const next = spreadToFloors(rendered, layoutFloors(table, userId))
-  const total = next.reduce((sum, width) => sum + width, 0)
+  let next = spreadToFloors(rendered, layoutFloors(table, userId))
+  let total = next.reduce((sum, width) => sum + width, 0)
+  if (total > container) {
+    const spare = Math.max(0, next[PURPOSE_INDEX] - columnFloor(headers[PURPOSE_INDEX], table, userId))
+    const cut = Math.min(spare, total - container)
+    next = next.slice()
+    next[PURPOSE_INDEX] -= cut
+    total -= cut
+  }
+  if (total > container + 1) {
+    const scale = container / total
+    next = next.map((width) => width * scale)
+    total = container
+  }
   const stable = next.every((width, index) => Math.abs(width - rendered[index]) < 2)
   const tableWidth = table.getBoundingClientRect().width
-  if (stable && (total <= container + 2 || Math.abs(tableWidth - total) < 2)) return false
-  if (total > container + 1) {
-    table.style.width = `${Math.ceil(total)}px`
-    next.forEach((width, index) => {
-      elements[index].style.width = `${width}px`
-    })
-  } else {
-    table.style.width = "100%"
-    next.forEach((width, index) => {
-      elements[index].style.width = `${(width / total) * 100}%`
-    })
-  }
+  if (stable && tableWidth <= container + 2) return false
+  table.style.width = "100%"
+  next.forEach((width, index) => {
+    elements[index].style.width = `${(width / Math.max(total, 1)) * 100}%`
+  })
   return true
 }
 
