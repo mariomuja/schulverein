@@ -39,6 +39,24 @@ function matchesFilter(application, filter) {
   return true
 }
 
+function ExportLinks({ sort, primary = false }) {
+  const className = primary
+    ? "btn btn-sm btn-primary"
+    : "btn btn-sm btn-outline-secondary export-btn d-inline-flex align-items-center"
+  return (
+    <>
+      <a className={className} href={`/export?sort=${sort}`}>
+        {primary ? null : <i className="bi bi-download" aria-hidden="true" />}
+        CSV exportieren
+      </a>
+      <a className={className} href="/export/pdf">
+        {primary ? null : <i className="bi bi-download" aria-hidden="true" />}
+        PDF seit Kassenprüfung
+      </a>
+    </>
+  )
+}
+
 function roleLine(user) {
   const parts = []
   if (user.role_label) parts.push(user.role_label)
@@ -83,15 +101,8 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
       </aside>
 
       <div className="d-flex flex-column align-items-start gap-2 mb-3">
-        <div className="d-flex flex-wrap gap-2">
-          <a className="btn btn-sm btn-outline-secondary export-btn d-inline-flex align-items-center" href={`/export?sort=${sort}`}>
-            <i className="bi bi-download d-xl-none" aria-hidden="true" />
-            CSV exportieren
-          </a>
-          <a className="btn btn-sm btn-outline-secondary export-btn d-inline-flex align-items-center" href="/export/pdf">
-            <i className="bi bi-download d-xl-none" aria-hidden="true" />
-            PDF seit Kassenprüfung
-          </a>
+        <div className="d-flex flex-wrap gap-2 d-xl-none">
+          <ExportLinks sort={sort} />
         </div>
 
         <div className="d-flex flex-wrap align-items-center gap-2 w-100">
@@ -110,13 +121,24 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
               )
             })}
           </div>
-          {user.can_write ? (
-            <NewApplication
-              sort={sort}
-              filter={filter}
-              openOnError={!editId && (hinweis === "antrag" || hinweis === "nachname")}
-            />
-          ) : null}
+          <div
+            className={
+              user.can_write
+                ? "d-flex flex-wrap align-items-center gap-2 ms-auto"
+                : "d-none d-xl-flex flex-wrap align-items-center gap-2 ms-auto"
+            }
+          >
+            <div className="d-none d-xl-flex flex-wrap gap-2">
+              <ExportLinks sort={sort} primary />
+            </div>
+            {user.can_write ? (
+              <NewApplication
+                sort={sort}
+                filter={filter}
+                openOnError={!editId && (hinweis === "antrag" || hinweis === "nachname")}
+              />
+            ) : null}
+          </div>
         </div>
       </div>
 

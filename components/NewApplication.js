@@ -37,7 +37,7 @@ export default function NewApplication({ sort, filter, openOnError = false }) {
   return (
     <>
       <button
-        className="btn btn-sm btn-primary ms-auto"
+        className="btn btn-sm btn-primary"
         type="button"
         onClick={() => setOpen(true)}
       >
