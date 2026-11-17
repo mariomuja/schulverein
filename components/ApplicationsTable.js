@@ -338,48 +338,34 @@ export default function ApplicationsTable({
                   sort={sort}
                   filter={filter}
                 >
-                  {(openEditor) => (
-                    <>
-                      <td className="text-nowrap">
-                        {formatGermanDate(application.application_date)}
+                  <>
+                    <td className="text-nowrap">
+                      {formatGermanDate(application.application_date)}
+                    </td>
+                    <td>{application.applicant}</td>
+                    <td className="purpose">{application.purpose}</td>
+                    <td className="text-end text-nowrap">
+                      {formatEuro(application.amount_cents)} €
+                    </td>
+                    {writers.map((writer) => (
+                      <td className="vote-cell" key={writer.id}>
+                        <VoteControl
+                          application={application}
+                          voter={writer}
+                          user={user}
+                        />
                       </td>
-                      <td>{application.applicant}</td>
-                      <td className="purpose">{application.purpose}</td>
-                      <td className="text-end text-nowrap">
-                        {formatEuro(application.amount_cents)} €
-                      </td>
-                      {writers.map((writer) => (
-                        <td className="vote-cell" key={writer.id}>
-                          <VoteControl
-                            application={application}
-                            voter={writer}
-                            user={user}
-                          />
-                        </td>
-                      ))}
-                      <td className="text-center">
-                        <StatusIcon approved={application.approved} />
-                      </td>
-                      <td>
-                        <CloseControl application={application} user={user} />
-                        {editable ? (
-                          <button
-                            className="btn btn-outline-secondary btn-sm edit-application mt-2"
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              openEditor()
-                            }}
-                          >
-                            Korrigieren
-                          </button>
-                        ) : null}
-                        {user.can_write && !application.hasVotes ? (
-                          <RemoveApplication applicationId={application.id} />
-                        ) : null}
-                      </td>
-                    </>
-                  )}
+                    ))}
+                    <td className="text-center">
+                      <StatusIcon approved={application.approved} />
+                    </td>
+                    <td>
+                      <CloseControl application={application} user={user} />
+                      {user.can_write && !application.hasVotes ? (
+                        <RemoveApplication applicationId={application.id} />
+                      ) : null}
+                    </td>
+                  </>
                 </EditableApplication>
               )
             })}

@@ -29,8 +29,7 @@ export default function ApplicationCards({
         sort={sort}
         filter={filter}
       >
-        {(openEditor) => (
-          <div className="card-body">
+        <div className="card-body">
             <div className="d-flex justify-content-between gap-3">
               <div>
                 <div className="fw-semibold">{formatGermanDate(application.application_date)}</div>
@@ -57,24 +56,11 @@ export default function ApplicationCards({
             <div className="border-top pt-3 mt-2">
               <div className="fw-semibold mb-2">Abstimmung abgeschlossen</div>
               <CloseControl application={application} user={user} />
-              {editable ? (
-                <button
-                  className="btn btn-outline-secondary btn-sm edit-application mt-2"
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    openEditor()
-                  }}
-                >
-                  Korrigieren
-                </button>
-              ) : null}
               {user.can_write && !application.hasVotes ? (
                 <RemoveApplication applicationId={application.id} />
               ) : null}
             </div>
           </div>
-        )}
       </EditableApplication>
     )
   })
