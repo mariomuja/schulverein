@@ -11,8 +11,8 @@ Die Seite ist nicht für Suchmaschinen bestimmt. Ohne persönliche Anmeldung ers
 - Förderanträge mit Datum, Antragsteller, Zweck und Höchstbetrag anlegen, ändern und entfernen, solange die Abstimmung offen ist.
 - Mit Ja oder Nein abstimmen. Genehmigt ist ein Antrag, wenn mehr als die Hälfte der Stimmberechtigten mit Ja stimmt.
 - Belege an offenen Anträgen hinterlegen (JPEG, PNG, WebP, GIF, HEIC, HEIF, PDF; höchstens 12 Dateien, je 4 MB) und in der Vorschau mit Lupe ansehen.
-- Die Abstimmung abschließen. Das kann nur der Schatzmeister. Danach sind Antrag, Stimmen und Belege festgeschrieben.
-- Datum der letzten Kassenprüfung setzen. Die Gesamtsumme zeigt die genehmigten Beträge seit diesem Datum.
+- Die Abstimmung abschließen, sobald ein Beleg hinterlegt ist. Das kann nur der Schatzmeister. Danach sind Antrag, Stimmen und Belege festgeschrieben. Der Höchstbetrag darf über dem Betrag auf dem Beleg liegen.
+- Datum der letzten Kassenprüfung setzen. Die Gesamtsumme zeigt die genehmigten Beträge seit diesem Datum. Ein neueres Datum archiviert den bisherigen Zeitraum mit Anträgen, Stimmen und Belegen. Kontodaten werden nicht gespeichert.
 - Alle Anträge als CSV exportieren und die Anträge seit der Kassenprüfung als PDF.
 - Benutzer mit Schreib- oder Leserecht anlegen, den persönlichen Zugangslink erneuern und Konten ohne abgegebene Stimme entfernen.
 

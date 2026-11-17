@@ -26,6 +26,17 @@ export default function CloseControl({ application, user }) {
     return <span className="fw-semibold">Nein</span>
   }
 
+  if (!(application.files ?? []).length) {
+    return (
+      <div>
+        <button className="btn close-btn btn-primary" type="button" disabled>
+          Abschließen
+        </button>
+        <div className="seal-meta">Beleg fehlt</div>
+      </div>
+    )
+  }
+
   return (
     <form action={setVotingClosed}>
       <input type="hidden" name="applicationId" value={application.id} />

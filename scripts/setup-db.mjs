@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "crypto"
 import fs from "fs"
 import pg from "pg"
+import { ensureArchiveSchema, roleFromDatabaseUrl } from "./archive-schema.mjs"
 
 function loadEnv(file) {
   if (!fs.existsSync(file)) return
@@ -336,6 +337,7 @@ if (inserted.rows[0]) {
   console.log("Erstantrag angelegt")
 }
 
+await ensureArchiveSchema(db, roleFromDatabaseUrl(databaseUrl))
 await db.end()
 
 const lines = freshLinks.map((row) => {

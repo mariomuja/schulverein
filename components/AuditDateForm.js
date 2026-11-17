@@ -3,7 +3,7 @@
 import { useRef } from "react"
 import { saveAuditDate } from "../app/actions"
 
-export default function AuditDateForm({ canWrite, defaultValue }) {
+export default function AuditDateForm({ canWrite, defaultValue, min = "" }) {
   const formRef = useRef(null)
 
   return (
@@ -17,9 +17,15 @@ export default function AuditDateForm({ canWrite, defaultValue }) {
         type="date"
         name="lastAuditDate"
         defaultValue={defaultValue}
+        min={min || undefined}
         disabled={!canWrite}
         onChange={() => formRef.current?.requestSubmit()}
       />
+      {canWrite ? (
+        <p className="audit-note-hint">
+          Ein neueres Datum archiviert den bisherigen Zeitraum.
+        </p>
+      ) : null}
     </form>
   )
 }

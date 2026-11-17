@@ -314,6 +314,15 @@ body.is-resizing-columns * {
   color: #212529;
 }
 
+.audit-note-hint,
+.audit-archive {
+  margin: 0.15rem 0 0;
+}
+
+.audit-archive a {
+  color: #0a3d7a;
+}
+
 .seal-meta {
   margin-top: 0.15rem;
   font-size: 0.7rem;

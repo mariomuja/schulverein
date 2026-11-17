@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { boardHref } from "../lib/list-query"
+import { periodLabel } from "../lib/archive"
 import { formatEuro } from "../lib/money"
 import { givenName } from "../lib/names"
 import ApplicationCards from "./ApplicationCards"
@@ -21,6 +22,9 @@ const hints = {
   geaendert: "Eine abgeschlossene Abstimmung kann nicht mehr geändert werden.",
   versiegelt:
     "Eine abgeschlossene Abstimmung bleibt festgeschrieben und kann nicht wieder geöffnet werden.",
+  ohnebeleg: "Die Abstimmung kann erst abgeschlossen werden, wenn ein Beleg hinterlegt ist.",
+  zeitraum:
+    "Das Datum der Kassenprüfung kann nur auf einen späteren Tag gesetzt werden. Der bisherige Zeitraum wird dabei archiviert.",
   beleg:
     "Der Beleg konnte nicht gespeichert werden. Erlaubt sind Fotos und PDF bis 4 MB, höchstens 12 Dateien je Antrag.",
 }
@@ -93,11 +97,32 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
         <AuditDateForm
           canWrite={user.can_write}
           defaultValue={data.lastAuditDate ?? ""}
+          min={data.archives.length ? data.lastAuditDate ?? "" : ""}
         />
         <p className="audit-note-sum">
           Gesamtsumme genehmigter Förderanträge seit der letzten Kassenprüfung:{" "}
           {formatEuro(data.approvedSumCents)} EUR
         </p>
+        <div className="audit-archive">
+          <div className="audit-note-label">Archivierte Zeiträume</div>
+          {data.archives.length === 0 ? (
+            <p className="mb-0">Noch keiner.</p>
+          ) : (
+            <ul className="list-unstyled mb-0">
+              {data.archives.map((period) => (
+                <li key={period.id}>
+                  {periodLabel(period.period_start, period.period_end)}
+                  {" · "}
+                  {formatEuro(period.approved_sum_cents)} EUR
+                  {" · "}
+                  <a href={`/export/archiv/${period.id}/pdf`}>PDF</a>
+                  {" · "}
+                  <a href={`/export/archiv/${period.id}/csv`}>CSV</a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </aside>
 
       <div className="d-flex flex-column align-items-start gap-2 mb-3">

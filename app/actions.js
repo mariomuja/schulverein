@@ -10,6 +10,7 @@ import { query, withTransaction } from "../lib/db"
 import { parseEuroToCents } from "../lib/money"
 import { boardHref } from "../lib/list-query"
 import { givenName, hasGivenAndFamilyName } from "../lib/names"
+import { archivePeriod } from "../lib/archive"
 import { appendLog, sealApplication } from "../lib/seal"
 import { acceptReceipt, maxReceipts } from "../lib/receipts"
 import { hashSecret } from "../lib/secret"
@@ -27,18 +28,23 @@ export async function saveAuditDate(formData) {
   const date = String(formData.get("lastAuditDate") ?? "").trim()
   if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) redirect("/?hinweis=datum")
 
-  await withTransaction(async (q) => {
+  const result = await withTransaction(async (q) => {
     const current = await q(
       `SELECT last_audit_date::text AS last_audit_date FROM settings WHERE id = 1`,
     )
     const previous = current.rows[0]?.last_audit_date ?? ""
+    if (date === previous) return { ok: true }
+    if (previous && (!date || date < previous)) return { error: "zeitraum" }
+    if (previous && date > previous) await archivePeriod(q, user, previous, date)
     await q(`UPDATE settings SET last_audit_date = $1 WHERE id = 1`, [date || null])
     await appendLog(q, {
       user,
       action: "kassenpruefung",
       detail: `Datum der letzten Kassenprüfung von ${previous || "leer"} auf ${date || "leer"}.`,
     })
+    return { ok: true }
   })
+  if (result.error) redirect(`/?hinweis=${result.error}`)
   revalidatePath("/")
 }
 
