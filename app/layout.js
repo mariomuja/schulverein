@@ -6,7 +6,7 @@ export const metadata = {
   description:
     "Abstimmung über Förderanträge des Schulvereins des Gymnasiums Heidberg e.V.",
   robots: { index: false, follow: false },
-  referrer: "strict-origin-when-cross-origin",
+  referrer: "no-referrer",
   appleWebApp: {
     capable: true,
     title: "Schulverein",

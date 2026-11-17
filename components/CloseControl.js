@@ -14,6 +14,9 @@ export default function CloseControl({ application, user }) {
           {application.sealedByName ? (
             <span className="d-block">von {application.sealedByName}</span>
           ) : null}
+          {application.proofOk === false ? (
+            <span className="d-block">Prüfcode passt nicht zur Stimmenliste.</span>
+          ) : null}
         </div>
       </div>
     )

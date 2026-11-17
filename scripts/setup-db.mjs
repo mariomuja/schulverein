@@ -158,13 +158,59 @@ await db.query(`
       RETURN OLD;
     END IF;
     IF EXISTS (SELECT 1 FROM vote_records WHERE application_id = OLD.id) THEN
-      IF NEW.application_date IS DISTINCT FROM OLD.application_date
+      IF OLD.voting_closed
+         OR NEW.application_date IS DISTINCT FROM OLD.application_date
          OR NEW.applicant IS DISTINCT FROM OLD.applicant
          OR NEW.purpose IS DISTINCT FROM OLD.purpose
          OR NEW.amount_cents IS DISTINCT FROM OLD.amount_cents
-         OR NEW.voting_closed IS DISTINCT FROM TRUE THEN
+         OR NEW.voting_closed IS DISTINCT FROM TRUE
+         OR NOT schulverein_record_matches(NEW.id) THEN
         RAISE EXCEPTION 'revisionssicher: abgeschlossener Antrag darf nicht geändert werden';
       END IF;
+    ELSIF NEW.voting_closed THEN
+      RAISE EXCEPTION 'revisionssicher: abschluss ohne passende niederschrift';
+    END IF;
+    RETURN NEW;
+  END;
+  $$;
+
+  CREATE OR REPLACE FUNCTION schulverein_record_matches(app_id INTEGER)
+  RETURNS BOOLEAN
+  LANGUAGE sql
+  STABLE
+  AS $$
+    SELECT EXISTS (
+      SELECT 1
+      FROM vote_records r
+      WHERE r.application_id = app_id
+        AND r.eligible_count = (
+          SELECT count(*) FROM vote_record_ballots b WHERE b.record_id = r.id
+        )
+        AND r.yes_count = (
+          SELECT count(*) FROM vote_record_ballots b
+          WHERE b.record_id = r.id AND b.decision = 'yes'
+        )
+        AND r.no_count = (
+          SELECT count(*) FROM vote_record_ballots b
+          WHERE b.record_id = r.id AND b.decision = 'no'
+        )
+        AND r.approved = (r.eligible_count > 0 AND r.yes_count * 2 > r.eligible_count)
+    );
+  $$;
+
+  CREATE OR REPLACE FUNCTION schulverein_protect_ballot()
+  RETURNS trigger
+  LANGUAGE plpgsql
+  AS $$
+  DECLARE
+    closed BOOLEAN;
+  BEGIN
+    SELECT a.voting_closed INTO closed
+    FROM vote_records r
+    JOIN applications a ON a.id = r.application_id
+    WHERE r.id = NEW.record_id;
+    IF closed THEN
+      RAISE EXCEPTION 'revisionssicher: niederschrift darf nicht ergänzt werden';
     END IF;
     RETURN NEW;
   END;
@@ -215,6 +261,12 @@ await db.query(
   `CREATE TRIGGER votes_sealed
    BEFORE INSERT OR UPDATE OR DELETE ON votes
    FOR EACH ROW EXECUTE FUNCTION schulverein_protect_vote()`,
+)
+await db.query(`DROP TRIGGER IF EXISTS vote_record_ballots_extend ON vote_record_ballots`)
+await db.query(
+  `CREATE TRIGGER vote_record_ballots_extend
+   BEFORE INSERT ON vote_record_ballots
+   FOR EACH ROW EXECUTE FUNCTION schulverein_protect_ballot()`,
 )
 
 const freshLinks = []

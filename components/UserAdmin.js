@@ -94,8 +94,9 @@ export default function UserAdmin({ accounts }) {
                     <ul className="mb-0 ps-3">
                       <li>
                         <span className="fw-semibold">Token deaktivieren:</span> der Nutzer kann sich
-                        nicht mehr anmelden (z.B. wenn er sein Amt abgegeben hat). Das Konto wird
-                        nicht gelöscht. Alle Abstimmungen des Nutzers bleiben dauerhaft erhalten.
+                        nicht mehr anmelden. Das Konto wird nicht gelöscht. Alle Abstimmungen des
+                        Nutzers bleiben dauerhaft erhalten. Beim Schreibrecht gibt es danach kein
+                        neues Token. Beim Leserecht kann ein neues Token erzeugt werden.
                       </li>
                       <li>
                         <span className="fw-semibold">Neues Token:</span> das alte Token wird
@@ -129,36 +130,36 @@ export default function UserAdmin({ accounts }) {
                         <div className="small text-secondary mb-2">
                           {account.roleLabel ? `${account.roleLabel} · ` : ""}
                           {account.canWrite ? "Schreibrecht" : "Leserecht"}
-                          {account.canWrite && !account.tokenActive ? " · Token deaktiviert" : ""}
+                          {!account.tokenActive ? " · Token deaktiviert" : ""}
                         </div>
                         <div className="d-flex flex-wrap gap-2">
-                          {account.canWrite && account.tokenActive ? (
-                            <>
-                              <form
-                                action={async (formData) => {
-                                  await deactivateUserToken(formData)
-                                  setIssued((current) =>
-                                    current?.id === account.id ? null : current,
-                                  )
-                                }}
-                              >
-                                <input type="hidden" name="userId" value={account.id} />
-                                <button className="btn btn-outline-secondary btn-sm" type="submit">
-                                  Token deaktivieren
-                                </button>
-                              </form>
-                              <form
-                                action={async (formData) => {
-                                  const renewed = await renewUserToken(formData)
-                                  if (renewed?.loginUrl) setIssued(renewed)
-                                }}
-                              >
-                                <input type="hidden" name="userId" value={account.id} />
-                                <button className="btn btn-outline-primary btn-sm" type="submit">
-                                  Neues Token
-                                </button>
-                              </form>
-                            </>
+                          {account.tokenActive ? (
+                            <form
+                              action={async (formData) => {
+                                await deactivateUserToken(formData)
+                                setIssued((current) =>
+                                  current?.id === account.id ? null : current,
+                                )
+                              }}
+                            >
+                              <input type="hidden" name="userId" value={account.id} />
+                              <button className="btn btn-outline-secondary btn-sm" type="submit">
+                                Token deaktivieren
+                              </button>
+                            </form>
+                          ) : null}
+                          {account.tokenActive || !account.canWrite ? (
+                            <form
+                              action={async (formData) => {
+                                const renewed = await renewUserToken(formData)
+                                if (renewed?.loginUrl) setIssued(renewed)
+                              }}
+                            >
+                              <input type="hidden" name="userId" value={account.id} />
+                              <button className="btn btn-outline-primary btn-sm" type="submit">
+                                Neues Token
+                              </button>
+                            </form>
                           ) : null}
                           {account.hasVoted ? (
                             <span className="small text-secondary align-self-center">

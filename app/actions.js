@@ -297,7 +297,7 @@ export async function deactivateUserToken(formData) {
     const result = await q(
       `UPDATE users
        SET login_token = NULL
-       WHERE id = $1 AND can_write AND login_token IS NOT NULL
+       WHERE id = $1 AND login_token IS NOT NULL
        RETURNING name`,
       [id],
     )
@@ -329,7 +329,8 @@ export async function renewUserToken(formData) {
     const result = await q(
       `UPDATE users
        SET login_token = $2
-       WHERE id = $1 AND can_write AND login_token IS NOT NULL
+       WHERE id = $1
+         AND ((can_write AND login_token IS NOT NULL) OR NOT can_write)
        RETURNING name`,
       [id, hashSecret(token)],
     )
@@ -369,16 +370,31 @@ export async function removeUser(formData) {
   if (!found.rows[0]) redirect("/?hinweis=benutzer")
   if (found.rows[0].has_voted) redirect("/?hinweis=stimme")
 
-  await query(`DELETE FROM sessions WHERE user_id = $1`, [id])
-  const removed = await query(
-    `DELETE FROM users
-     WHERE id = $1
-       AND NOT EXISTS (SELECT 1 FROM votes WHERE user_id = $1)
-       AND NOT EXISTS (SELECT 1 FROM vote_record_ballots WHERE user_id = $1)
-       AND NOT EXISTS (SELECT 1 FROM vote_records WHERE closed_by_user_id = $1)`,
-    [id],
-  )
-  if (removed.rowCount === 0) redirect("/?hinweis=stimme")
+  let removed
+  try {
+    removed = await withTransaction(async (q) => {
+      await q(`DELETE FROM sessions WHERE user_id = $1`, [id])
+      const result = await q(
+        `DELETE FROM users
+         WHERE id = $1
+           AND NOT EXISTS (SELECT 1 FROM votes WHERE user_id = $1)
+           AND NOT EXISTS (SELECT 1 FROM vote_record_ballots WHERE user_id = $1)
+           AND NOT EXISTS (SELECT 1 FROM vote_records WHERE closed_by_user_id = $1)
+         RETURNING name`,
+        [id],
+      )
+      if (result.rowCount === 0) throw new Error("KEEP")
+      await appendLog(q, {
+        user,
+        action: "benutzer_entfernt",
+        detail: `${result.rows[0].name} entfernt.`,
+      })
+      return result
+    })
+  } catch (error) {
+    if (error?.message !== "KEEP") throw error
+    redirect("/?hinweis=stimme")
+  }
   revalidatePath("/")
 }
 
