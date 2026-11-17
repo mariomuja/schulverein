@@ -10,6 +10,8 @@ export default async function Page({ searchParams }) {
   const hinweis = Array.isArray(params.hinweis) ? params.hinweis[0] : params.hinweis
   const sort = params.sort === "asc" ? "asc" : "desc"
   const filter = cleanFilter(Array.isArray(params.filter) ? params.filter[0] : params.filter)
+  const edit = Number(Array.isArray(params.edit) ? params.edit[0] : params.edit)
+  const editId = Number.isInteger(edit) && edit > 0 ? edit : null
   const user = await getUser()
 
   if (!user) {
@@ -22,5 +24,5 @@ export default async function Page({ searchParams }) {
   }
 
   const data = await loadBoard(sort)
-  return <Board user={user} data={data} hinweis={hinweis} sort={sort} filter={filter} />
+  return <Board user={user} data={data} hinweis={hinweis} sort={sort} filter={filter} editId={editId} />
 }

@@ -1,16 +1,12 @@
 import Link from "next/link"
 import { boardHref } from "../lib/list-query"
-import { formatEuro, formatGermanDate } from "../lib/money"
+import { formatEuro } from "../lib/money"
 import { givenName } from "../lib/names"
+import ApplicationCards from "./ApplicationCards"
 import ApplicationsTable from "./ApplicationsTable"
 import AuditDateForm from "./AuditDateForm"
-import CloseControl from "./CloseControl"
 import DateSort from "./DateSort"
-import EditApplication from "./EditApplication"
 import NewApplication from "./NewApplication"
-import RemoveApplication from "./RemoveApplication"
-import StatusIcon from "./StatusIcon"
-import VoteControl from "./VoteControl"
 
 const hints = {
   recht: "Dafür fehlt die Berechtigung.",
@@ -22,7 +18,7 @@ const hints = {
   benutzer: "Der Benutzer konnte nicht gespeichert werden. Bitte den Namen prüfen.",
   stimme: "Dieser Benutzer hat bereits abgestimmt und kann nicht entfernt werden.",
   stimmen: "Dieser Förderantrag hat bereits Stimmen und kann nicht entfernt werden.",
-  geaendert: "Dieser Förderantrag hat bereits Stimmen und kann nicht mehr geändert werden.",
+  geaendert: "Eine abgeschlossene Abstimmung kann nicht mehr geändert werden.",
   versiegelt:
     "Eine abgeschlossene Abstimmung bleibt festgeschrieben und kann nicht wieder geöffnet werden.",
 }
@@ -48,7 +44,7 @@ function roleLine(user) {
   return parts.join(" · ")
 }
 
-export default function Board({ user, data, hinweis, sort, filter = "" }) {
+export default function Board({ user, data, hinweis, sort, filter = "", editId = null }) {
   const message = hints[hinweis]
   const applications = data.applications.filter((application) =>
     matchesFilter(application, filter),
@@ -114,7 +110,7 @@ export default function Board({ user, data, hinweis, sort, filter = "" }) {
             <NewApplication
               sort={sort}
               filter={filter}
-              openOnError={hinweis === "antrag" || hinweis === "nachname"}
+              openOnError={!editId && (hinweis === "antrag" || hinweis === "nachname")}
             />
           ) : null}
         </div>
@@ -131,6 +127,7 @@ export default function Board({ user, data, hinweis, sort, filter = "" }) {
           user={user}
           sort={sort}
           filter={filter}
+          editId={hinweis === "antrag" || hinweis === "nachname" ? editId : null}
         />
       </div>
 
@@ -138,53 +135,14 @@ export default function Board({ user, data, hinweis, sort, filter = "" }) {
         <div className="mb-2">
           <DateSort sort={sort} filter={filter} className="date-sort-mobile" />
         </div>
-        {applications.map((application) => (
-          <article className="card shadow-sm mb-3" key={application.id}>
-            <div className="card-body">
-              <div className="d-flex justify-content-between gap-3">
-                <div>
-                  <div className="fw-semibold">
-                    {formatGermanDate(application.application_date)}
-                  </div>
-                  <div>{application.applicant}</div>
-                </div>
-                <div className="text-end">
-                  <div className="fs-5 fw-semibold text-nowrap">
-                    {formatEuro(application.amount_cents)} €
-                  </div>
-                  <StatusIcon approved={application.approved} />
-                </div>
-              </div>
-              <p className="purpose mt-2 mb-3">{application.purpose}</p>
-              <div className="small text-secondary mb-1">Stimmen</div>
-              {data.writers.map((writer) => (
-                <div className="border-top py-2" key={writer.id}>
-                  <div className="fw-semibold">{givenName(writer.name)}</div>
-                  {writer.role_label ? (
-                    <div className="small text-secondary mb-1">
-                      {writer.role_label}
-                    </div>
-                  ) : null}
-                  <VoteControl
-                    application={application}
-                    voter={writer}
-                    user={user}
-                  />
-                </div>
-              ))}
-              <div className="border-top pt-3 mt-2">
-                <div className="fw-semibold mb-2">Abstimmung abgeschlossen</div>
-                <CloseControl application={application} user={user} />
-                {user.can_write && !application.hasVotes ? (
-                  <>
-                    <EditApplication application={application} sort={sort} filter={filter} />
-                    <RemoveApplication applicationId={application.id} />
-                  </>
-                ) : null}
-              </div>
-            </div>
-          </article>
-        ))}
+        <ApplicationCards
+          applications={applications}
+          writers={data.writers}
+          user={user}
+          sort={sort}
+          filter={filter}
+          editId={hinweis === "antrag" || hinweis === "nachname" ? editId : null}
+        />
       </div>
       </>
       )}

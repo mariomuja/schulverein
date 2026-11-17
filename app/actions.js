@@ -135,6 +135,7 @@ export async function updateApplication(formData) {
       sort: String(formData.get("sort") ?? ""),
       filter: String(formData.get("filter") ?? ""),
       hinweis,
+      edit: id || "",
     })
 
   if (applicant.length > 0 && applicant.length <= 120 && !hasGivenAndFamilyName(applicant)) {
@@ -158,7 +159,7 @@ export async function updateApplication(formData) {
       `UPDATE applications
        SET application_date = $2, applicant = $3, purpose = $4, amount_cents = $5
        WHERE id = $1
-         AND NOT EXISTS (SELECT 1 FROM votes WHERE application_id = $1)
+         AND voting_closed = FALSE
          AND NOT EXISTS (SELECT 1 FROM vote_records WHERE application_id = $1)`,
       [id, applicationDate, applicant, purpose, amountCents],
     )

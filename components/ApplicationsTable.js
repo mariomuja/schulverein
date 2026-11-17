@@ -5,7 +5,7 @@ import { formatEuro, formatGermanDate } from "../lib/money"
 import { givenName } from "../lib/names"
 import CloseControl from "./CloseControl"
 import DateSort from "./DateSort"
-import EditApplication from "./EditApplication"
+import EditableApplication from "./EditableApplication"
 import RemoveApplication from "./RemoveApplication"
 import StatusIcon from "./StatusIcon"
 import VoteControl from "./VoteControl"
@@ -119,7 +119,14 @@ function readWidths(writerCount, columnCount) {
   }
 }
 
-export default function ApplicationsTable({ applications, writers, user, sort, filter = "" }) {
+export default function ApplicationsTable({
+  applications,
+  writers,
+  user,
+  sort,
+  filter = "",
+  editId = null,
+}) {
   const wrapRef = useRef(null)
   const tableRef = useRef(null)
   const lineRefs = useRef([])
@@ -317,39 +324,65 @@ export default function ApplicationsTable({ applications, writers, user, sort, f
             </tr>
           </thead>
           <tbody>
-            {applications.map((application) => (
-              <tr key={application.id}>
-                <td className="text-nowrap">
-                  {formatGermanDate(application.application_date)}
-                </td>
-                <td>{application.applicant}</td>
-                <td className="purpose">{application.purpose}</td>
-                <td className="text-end text-nowrap">
-                  {formatEuro(application.amount_cents)} €
-                </td>
-                {writers.map((writer) => (
-                  <td className="vote-cell" key={writer.id}>
-                    <VoteControl
-                      application={application}
-                      voter={writer}
-                      user={user}
-                    />
-                  </td>
-                ))}
-                <td className="text-center">
-                  <StatusIcon approved={application.approved} />
-                </td>
-                <td>
-                  <CloseControl application={application} user={user} />
-                  {user.can_write && !application.hasVotes ? (
+            {applications.map((application) => {
+              const editable = user.can_write && !application.sealed && !application.voting_closed
+              return (
+                <EditableApplication
+                  key={application.id}
+                  as="tr"
+                  className={editable ? "application-editable" : undefined}
+                  enabled={editable}
+                  editOnLoad={editId === application.id}
+                  wideLayout
+                  application={application}
+                  sort={sort}
+                  filter={filter}
+                >
+                  {(openEditor) => (
                     <>
-                      <EditApplication application={application} sort={sort} filter={filter} />
-                      <RemoveApplication applicationId={application.id} />
+                      <td className="text-nowrap">
+                        {formatGermanDate(application.application_date)}
+                      </td>
+                      <td>{application.applicant}</td>
+                      <td className="purpose">{application.purpose}</td>
+                      <td className="text-end text-nowrap">
+                        {formatEuro(application.amount_cents)} €
+                      </td>
+                      {writers.map((writer) => (
+                        <td className="vote-cell" key={writer.id}>
+                          <VoteControl
+                            application={application}
+                            voter={writer}
+                            user={user}
+                          />
+                        </td>
+                      ))}
+                      <td className="text-center">
+                        <StatusIcon approved={application.approved} />
+                      </td>
+                      <td>
+                        <CloseControl application={application} user={user} />
+                        {editable ? (
+                          <button
+                            className="btn btn-outline-secondary btn-sm edit-application mt-2"
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              openEditor()
+                            }}
+                          >
+                            Korrigieren
+                          </button>
+                        ) : null}
+                        {user.can_write && !application.hasVotes ? (
+                          <RemoveApplication applicationId={application.id} />
+                        ) : null}
+                      </td>
                     </>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
+                  )}
+                </EditableApplication>
+              )
+            })}
           </tbody>
         </table>
         {Array.from({ length: columnCount - 1 }, (_, index) => (

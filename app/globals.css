@@ -69,6 +69,18 @@ body {
   overflow-wrap: break-word;
 }
 
+.applications-table tr.application-editable {
+  cursor: pointer;
+}
+
+.application-card-editable {
+  cursor: pointer;
+}
+
+.application-card-editable:hover {
+  border-color: var(--bs-primary);
+}
+
 .applications-table .btn {
   width: 100%;
   max-width: 100%;
