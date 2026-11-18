@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { addApplication } from "../app/actions"
 
-export default function NewApplication({ sort, filter, openOnError = false }) {
+export default function NewApplication({ sort, filter, openOnError = false, className = "" }) {
   const titleId = useId()
   const dateId = useId()
   const applicantId = useId()
@@ -37,7 +37,7 @@ export default function NewApplication({ sort, filter, openOnError = false }) {
   return (
     <>
       <button
-        className="btn btn-sm btn-primary"
+        className={`btn btn-sm btn-primary ${className}`.trim()}
         type="button"
         onClick={() => setOpen(true)}
       >

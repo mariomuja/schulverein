@@ -95,8 +95,8 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
           <ExportLinks sort={sort} />
         </div>
 
-        <div className="d-flex flex-wrap align-items-center gap-2 w-100">
-          <div className="d-flex flex-wrap gap-2" role="group" aria-label="Förderanträge filtern">
+        <div className="board-actions">
+          <div className="board-filters d-flex flex-wrap gap-2" role="group" aria-label="Förderanträge filtern">
             {filters.map((entry) => {
               const active = entry.id === filter
               return (
@@ -111,24 +111,18 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
               )
             })}
           </div>
-          <div
-            className={
-              user.can_write
-                ? "d-flex flex-wrap align-items-center gap-2 ms-auto"
-                : "d-none d-xl-flex flex-wrap align-items-center gap-2 ms-auto"
-            }
-          >
-            <div className="d-none d-xl-flex flex-wrap gap-2">
-              <ExportLinks sort={sort} primary />
-            </div>
-            {user.can_write ? (
-              <NewApplication
-                sort={sort}
-                filter={filter}
-                openOnError={!editId && (hinweis === "antrag" || hinweis === "nachname")}
-              />
-            ) : null}
+          <div className="d-none d-xl-flex flex-wrap align-items-center gap-2 ms-xl-auto">
+            <ExportLinks sort={sort} primary />
           </div>
+          <DateSort sort={sort} filter={filter} className="date-sort-mobile d-xl-none" />
+          {user.can_write ? (
+            <NewApplication
+              className="board-new-application"
+              sort={sort}
+              filter={filter}
+              openOnError={!editId && (hinweis === "antrag" || hinweis === "nachname")}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -148,9 +142,6 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
       </div>
 
       <div className="d-xl-none">
-        <div className="mb-2">
-          <DateSort sort={sort} filter={filter} className="date-sort-mobile" />
-        </div>
         <ApplicationCards
           applications={applications}
           user={user}
