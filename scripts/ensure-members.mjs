@@ -31,12 +31,17 @@ if (!seeded.rows[0]?.members_access_seeded) {
      SET members_access = 'write'
      WHERE lower(btrim(name)) IN ('mario', 'mario muja')`,
   )
-  await db.query(
-    `UPDATE users
-     SET members_access = 'write', can_write = FALSE
-     WHERE lower(btrim(name)) = 'steffi'`,
-  )
   await db.query(`UPDATE settings SET members_access_seeded = TRUE WHERE id = 1`)
+}
+await db.query(
+  `ALTER TABLE settings ADD COLUMN IF NOT EXISTS members_tab_limited BOOLEAN NOT NULL DEFAULT FALSE`,
+)
+const limited = await db.query(`SELECT members_tab_limited FROM settings WHERE id = 1`)
+if (!limited.rows[0]?.members_tab_limited) {
+  await db.query(
+    `UPDATE users SET members_access = 'none' WHERE lower(btrim(name)) = 'steffi'`,
+  )
+  await db.query(`UPDATE settings SET members_tab_limited = TRUE WHERE id = 1`)
 }
 
 await db.query(`
