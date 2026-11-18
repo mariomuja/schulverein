@@ -95,8 +95,7 @@ export default function UserAdmin({ accounts }) {
                       <li>
                         <span className="fw-semibold">Token deaktivieren:</span> der Nutzer kann sich
                         nicht mehr anmelden. Das Konto wird nicht gelöscht. Alle Abstimmungen des
-                        Nutzers bleiben dauerhaft erhalten. Beim Schreibrecht gibt es danach kein
-                        neues Token. Beim Leserecht kann ein neues Token erzeugt werden.
+                        Nutzers bleiben dauerhaft erhalten.
                       </li>
                       <li>
                         <span className="fw-semibold">Neues Token:</span> das alte Token wird
