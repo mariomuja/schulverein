@@ -25,7 +25,7 @@ export default function EditableApplication({
 
   function onClick(event) {
     if (!enabled) return
-    if (event.target.closest("button, a, input, textarea, select, label")) return
+    if (event.target.closest("button, a, input, textarea, select, label, .close-control")) return
     setOpen(true)
   }
 
