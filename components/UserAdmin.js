@@ -142,7 +142,7 @@ export default function UserAdmin({ accounts }) {
                               }}
                             >
                               <input type="hidden" name="userId" value={account.id} />
-                              <button className="btn btn-outline-secondary btn-sm" type="submit">
+                              <button className="btn btn-outline-primary btn-sm" type="submit">
                                 Token deaktivieren
                               </button>
                             </form>
