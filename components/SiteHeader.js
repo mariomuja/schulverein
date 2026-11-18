@@ -25,7 +25,7 @@ export default async function SiteHeader() {
             </form>
             {user.can_write ? (
               <Suspense fallback={null}>
-                <UserAdmin accounts={accounts} />
+                <UserAdmin accounts={accounts} canManage={user.can_write} />
               </Suspense>
             ) : null}
           </div>

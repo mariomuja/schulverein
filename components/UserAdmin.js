@@ -11,7 +11,7 @@ const hints = {
   stimme: "Dieser Benutzer hat bereits abgestimmt und kann nicht entfernt werden.",
 }
 
-export default function UserAdmin({ accounts }) {
+export default function UserAdmin({ accounts, canManage = false }) {
   const params = useSearchParams()
   const hint = params.get("hinweis")
   const message = hints[hint] ?? ""
@@ -46,6 +46,8 @@ export default function UserAdmin({ accounts }) {
       document.removeEventListener("keydown", onKeyDown)
     }
   }, [open])
+
+  if (!canManage) return null
 
   return (
     <>
@@ -131,48 +133,52 @@ export default function UserAdmin({ accounts }) {
                           {account.canWrite ? "Schreibrecht" : "Leserecht"}
                           {!account.tokenActive ? " · Token deaktiviert" : ""}
                         </div>
-                        <div className="d-flex flex-wrap gap-2">
-                          {account.tokenActive ? (
-                            <form
-                              action={async (formData) => {
-                                await deactivateUserToken(formData)
-                                setIssued((current) =>
-                                  current?.id === account.id ? null : current,
-                                )
-                              }}
-                            >
-                              <input type="hidden" name="userId" value={account.id} />
-                              <button className="btn btn-outline-primary btn-sm" type="submit">
-                                Token deaktivieren
-                              </button>
-                            </form>
-                          ) : null}
-                          {account.tokenActive || !account.canWrite ? (
-                            <form
-                              action={async (formData) => {
-                                const renewed = await renewUserToken(formData)
-                                if (renewed?.loginUrl) setIssued(renewed)
-                              }}
-                            >
-                              <input type="hidden" name="userId" value={account.id} />
-                              <button className="btn btn-outline-primary btn-sm" type="submit">
-                                Neues Token
-                              </button>
-                            </form>
-                          ) : null}
-                          {account.hasVoted ? (
-                            <span className="small text-secondary align-self-center">
-                              Hat bereits abgestimmt
-                            </span>
-                          ) : (
-                            <form action={removeUser}>
-                              <input type="hidden" name="userId" value={account.id} />
-                              <button className="btn btn-outline-danger btn-sm" type="submit">
-                                Entfernen
-                              </button>
-                            </form>
-                          )}
-                        </div>
+                        {account.canWrite ? (
+                          <div className="d-flex flex-wrap gap-2">
+                            {account.tokenActive ? (
+                              <form
+                                action={async (formData) => {
+                                  await deactivateUserToken(formData)
+                                  setIssued((current) =>
+                                    current?.id === account.id ? null : current,
+                                  )
+                                }}
+                              >
+                                <input type="hidden" name="userId" value={account.id} />
+                                <button className="btn btn-outline-primary btn-sm" type="submit">
+                                  Token deaktivieren
+                                </button>
+                              </form>
+                            ) : null}
+                            {account.tokenActive ? (
+                              <form
+                                action={async (formData) => {
+                                  const renewed = await renewUserToken(formData)
+                                  if (renewed?.loginUrl) setIssued(renewed)
+                                }}
+                              >
+                                <input type="hidden" name="userId" value={account.id} />
+                                <button className="btn btn-outline-primary btn-sm" type="submit">
+                                  Neues Token
+                                </button>
+                              </form>
+                            ) : null}
+                            {account.hasVoted ? (
+                              <span className="small text-secondary align-self-center">
+                                Hat bereits abgestimmt
+                              </span>
+                            ) : (
+                              <form action={removeUser}>
+                                <input type="hidden" name="userId" value={account.id} />
+                                <button className="btn btn-outline-danger btn-sm" type="submit">
+                                  Entfernen
+                                </button>
+                              </form>
+                            )}
+                          </div>
+                        ) : account.hasVoted ? (
+                          <span className="small text-secondary">Hat bereits abgestimmt</span>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
