@@ -54,7 +54,6 @@ export default function ApplicationCards({
               <div className="small text-secondary mb-1">Beleg</div>
               <Receipts application={application} user={user} />
             </div>
-            <div className="small text-secondary mb-1">Stimmen</div>
             <ul className="list-unstyled mb-2">
               {application.voters.map((writer) => (
                 <li className="d-flex align-items-center gap-2 py-1" key={writer.id}>
