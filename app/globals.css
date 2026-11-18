@@ -397,6 +397,12 @@ body.is-resizing-columns * {
   .save-btn {
     width: 100%;
   }
+
+  .vote-btn.vote-btn-compact {
+    width: auto;
+    min-height: 32px;
+    padding: 0.1rem 0.7rem;
+  }
 }
 
 @media (min-width: 576px) and (max-width: 1199.98px) {

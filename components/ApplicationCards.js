@@ -55,17 +55,20 @@ export default function ApplicationCards({
               <Receipts application={application} user={user} />
             </div>
             <div className="small text-secondary mb-1">Stimmen</div>
-            {application.voters.map((writer) => (
-              <div className="border-top py-2" key={writer.id}>
-                <div className="fw-semibold">{givenName(writer.name)}</div>
-                {writer.role_label ? (
-                  <div className="small text-secondary mb-1">{writer.role_label}</div>
-                ) : null}
-                <VoteControl application={application} voter={writer} user={user} />
-              </div>
-            ))}
-            <div className="border-top pt-3 mt-2">
-              <div className="fw-semibold mb-2">Abstimmung abgeschlossen</div>
+            <ul className="list-unstyled mb-2">
+              {application.voters.map((writer) => (
+                <li className="d-flex align-items-center gap-2 py-1" key={writer.id}>
+                  <span className="fw-semibold">{givenName(writer.name)}:</span>
+                  <VoteControl
+                    application={application}
+                    voter={writer}
+                    user={user}
+                    compact
+                  />
+                </li>
+              ))}
+            </ul>
+            <div className="border-top pt-2">
               <CloseControl application={application} user={user} />
               {user.can_write && !application.hasVotes ? (
                 <RemoveApplication applicationId={application.id} />
