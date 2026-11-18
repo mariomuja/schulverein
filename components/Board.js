@@ -90,7 +90,7 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
         </div>
       ) : null}
 
-      <div className="d-flex flex-column align-items-start gap-2 mb-3">
+      <div className="board-toolbar d-flex flex-column align-items-start gap-2">
         <div className="d-flex flex-wrap gap-2 d-xl-none">
           <ExportLinks sort={sort} />
         </div>

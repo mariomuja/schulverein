@@ -107,10 +107,13 @@ body {
 }
 
 .date-sort-mobile {
-  padding: 0.25rem 0.5rem;
+  box-sizing: border-box;
+  height: calc(1.8125rem + 2px);
+  padding: 0 0.5rem;
   font-size: 0.875rem;
-  line-height: 1.5;
-  border: 1px solid #dee2e6;
+  font-weight: 400;
+  line-height: 1;
+  border: 1px solid #6c757d;
   border-radius: 0.25rem;
   background: #fff;
 }
@@ -118,6 +121,10 @@ body {
 .date-sort-mobile:hover,
 .date-sort-mobile:focus-visible {
   text-decoration: none;
+}
+
+.board-toolbar {
+  margin-bottom: 1rem;
 }
 
 .board-actions {
@@ -129,10 +136,28 @@ body {
 }
 
 @media (max-width: 1199.98px) {
+  .board-toolbar {
+    margin-bottom: 0.35rem;
+  }
+
   .board-actions {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
+    row-gap: 0.25rem;
+  }
+
+  .date-sort-mobile,
+  .board-new-application {
+    box-sizing: border-box;
+    height: calc(1.8125rem + 2px);
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    font-size: 0.875rem;
   }
 
   .board-actions .board-filters {
