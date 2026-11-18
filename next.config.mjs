@@ -17,7 +17,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
       "font-src 'self' https://cdn.jsdelivr.net",
       "img-src 'self' data: blob:",
-      "connect-src 'self' https://cdn.jsdelivr.net https://huggingface.co https://cdn-lfs.huggingface.co https://cas-bridge.xethub.hf.co",
+      "connect-src 'self' https://cdn.jsdelivr.net https://huggingface.co https://cdn-lfs.huggingface.co https://cas-bridge.xethub.hf.co https://us.aws.cdn.hf.co https://eu.aws.cdn.hf.co",
       "frame-src 'self' blob:",
       "frame-ancestors 'none'",
       "base-uri 'self'",
