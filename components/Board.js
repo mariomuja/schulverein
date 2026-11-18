@@ -111,6 +111,7 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
               )
             })}
           </div>
+          <div className="board-divider d-xl-none" role="separator" />
           <div className="d-none d-xl-flex flex-wrap align-items-center gap-2 ms-xl-auto">
             <ExportLinks sort={sort} primary />
           </div>

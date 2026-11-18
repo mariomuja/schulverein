@@ -160,8 +160,15 @@ body {
     font-size: 0.875rem;
   }
 
-  .board-actions .board-filters {
+  .board-actions .board-filters,
+  .board-divider {
     grid-column: 1 / -1;
+  }
+
+  .board-divider {
+    height: 1px;
+    margin: 0.2rem 0;
+    background: #dee2e6;
   }
 
   .board-new-application {
