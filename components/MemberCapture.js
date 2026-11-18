@@ -3,19 +3,16 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { saveMember } from "../app/actions"
-import { readMembership } from "../lib/membership-ocr"
+import { mergeMembership, readMembership } from "../lib/membership-ocr"
 
 const empty = {
   familyName: "",
   givenName: "",
-  furtherNames: "",
   street: "",
   houseNumber: "",
   postalCode: "",
   city: "",
   email: "",
-  signedPlace: "",
-  signedOn: "",
   bankName: "",
   iban: "",
   accountHolder: "",
@@ -41,35 +38,80 @@ function Field({ id, label, name, value, onChange, type = "text", required = fal
   )
 }
 
+function paperBounds(image) {
+  const { data, width, height } = image
+  let minX = width
+  let minY = height
+  let maxX = 0
+  let maxY = 0
+  let count = 0
+  for (let y = 0; y < height; y += 8) {
+    for (let x = 0; x < width; x += 8) {
+      const index = (y * width + x) * 4
+      const red = data[index]
+      const green = data[index + 1]
+      const blue = data[index + 2]
+      if (Math.min(red, green, blue) > 170 && red + green + blue > 540) {
+        count += 1
+        minX = Math.min(minX, x)
+        minY = Math.min(minY, y)
+        maxX = Math.max(maxX, x)
+        maxY = Math.max(maxY, y)
+      }
+    }
+  }
+  if (count < 40 || maxX <= minX) return null
+  const x = Math.max(0, minX - 8)
+  const y = Math.max(0, minY - 8)
+  return {
+    x,
+    y,
+    width: Math.min(width, maxX + 8) - x,
+    height: Math.min(height, maxY + 8) - y,
+  }
+}
+
 async function canvasFromFile(file) {
   const bitmap = await createImageBitmap(file)
   const landscape = bitmap.width > bitmap.height * 1.05
-  const sourceWidth = landscape ? bitmap.height : bitmap.width
-  const sourceHeight = landscape ? bitmap.width : bitmap.height
-  const scale = Math.min(2, 2200 / Math.max(sourceWidth, 1))
-  const canvas = document.createElement("canvas")
-  canvas.width = Math.round(sourceWidth * Math.max(scale, 1))
-  canvas.height = Math.round(sourceHeight * Math.max(scale, 1))
-  const context = canvas.getContext("2d", { willReadFrequently: true })
+  const oriented = document.createElement("canvas")
+  oriented.width = landscape ? bitmap.height : bitmap.width
+  oriented.height = landscape ? bitmap.width : bitmap.height
+  const orientedContext = oriented.getContext("2d", { willReadFrequently: true })
   if (landscape) {
-    context.translate(canvas.width, 0)
-    context.rotate(Math.PI / 2)
-    context.drawImage(bitmap, 0, 0, canvas.height, canvas.width)
-  } else {
-    context.setTransform(1, 0, 0, 1, 0, 0)
-    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    orientedContext.translate(oriented.width, 0)
+    orientedContext.rotate(Math.PI / 2)
   }
+  orientedContext.drawImage(bitmap, 0, 0)
+  bitmap.close?.()
+  const bounds = paperBounds(orientedContext.getImageData(0, 0, oriented.width, oriented.height))
+  const source = bounds ?? { x: 0, y: 0, width: oriented.width, height: oriented.height }
+  const scale = Math.min(2, 2200 / Math.max(source.width, source.height, 1))
+  const canvas = document.createElement("canvas")
+  canvas.width = Math.round(source.width * Math.max(scale, 1))
+  canvas.height = Math.round(source.height * Math.max(scale, 1))
+  const context = canvas.getContext("2d", { willReadFrequently: true })
+  context.drawImage(
+    oriented,
+    source.x,
+    source.y,
+    source.width,
+    source.height,
+    0,
+    0,
+    canvas.width,
+    canvas.height,
+  )
   const image = context.getImageData(0, 0, canvas.width, canvas.height)
   const data = image.data
   for (let index = 0; index < data.length; index += 4) {
     const gray = data[index] * 0.3 + data[index + 1] * 0.59 + data[index + 2] * 0.11
-    const contrast = Math.min(255, Math.max(0, (gray - 128) * 1.35 + 128))
+    const contrast = Math.min(255, Math.max(0, (gray - 128) * 1.2 + 128))
     data[index] = contrast
     data[index + 1] = contrast
     data[index + 2] = contrast
   }
   context.putImageData(image, 0, 0)
-  bitmap.close?.()
   return canvas
 }
 
@@ -105,14 +147,11 @@ export default function MemberCapture() {
     setFields({
       familyName: reading.familyName ?? "",
       givenName: reading.givenName ?? "",
-      furtherNames: reading.furtherNames ?? "",
       street: reading.street ?? "",
       houseNumber: reading.houseNumber ?? "",
       postalCode: reading.postalCode ?? "",
       city: reading.city ?? "",
       email: reading.email ?? "",
-      signedPlace: reading.signedPlace ?? "",
-      signedOn: reading.signedOn ?? "",
       bankName: reading.bankName ?? "",
       iban: reading.iban ?? "",
       accountHolder: reading.accountHolder ?? "",
@@ -132,7 +171,34 @@ export default function MemberCapture() {
     }
   }
 
-  async function onFile(event) {
+  function scorePrint(text) {
+  const value = String(text ?? "").toLowerCase()
+  return ["beitritt", "schulverein", "straße", "strasse", "iban", "beitrag", "konto"].filter((word) =>
+    value.includes(word),
+  ).length
+}
+
+function downscale(source, longSide) {
+  const scale = Math.min(1, longSide / Math.max(source.width, source.height, 1))
+  const canvas = document.createElement("canvas")
+  canvas.width = Math.max(1, Math.round(source.width * scale))
+  canvas.height = Math.max(1, Math.round(source.height * scale))
+  canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height)
+  return canvas
+}
+
+function rotate180(source) {
+  const canvas = document.createElement("canvas")
+  canvas.width = source.width
+  canvas.height = source.height
+  const context = canvas.getContext("2d")
+  context.translate(canvas.width, canvas.height)
+  context.rotate(Math.PI)
+  context.drawImage(source, 0, 0)
+  return canvas
+}
+
+async function onFile(event) {
     const file = event.target.files?.[0]
     event.target.value = ""
     if (!file) return
@@ -146,7 +212,7 @@ export default function MemberCapture() {
       if (!file.type.startsWith("image/") || file.size > 8 * 1024 * 1024) {
         throw new Error("datei")
       }
-      const canvas = await canvasFromFile(file)
+      let canvas = await canvasFromFile(file)
       const { createWorker } = await import("tesseract.js")
       const worker = await createWorker("deu", 1, {
         logger: (message) => {
@@ -155,9 +221,20 @@ export default function MemberCapture() {
           }
         },
       })
-      const result = await worker.recognize(canvas)
+      await worker.setParameters({ tessedit_pageseg_mode: "6" })
+      const preview = await worker.recognize(downscale(canvas, 1000))
+      const previewScore = scorePrint(preview.data.text)
+      if (previewScore < 2) {
+        const flipped = rotate180(canvas)
+        const flippedPreview = await worker.recognize(downscale(flipped, 1000))
+        if (scorePrint(flippedPreview.data.text) > previewScore) canvas = flipped
+      }
+      await worker.setParameters({ tessedit_pageseg_mode: "11" })
+      const sparse = await worker.recognize(canvas)
+      await worker.setParameters({ tessedit_pageseg_mode: "6" })
+      const block = await worker.recognize(canvas)
       await worker.terminate()
-      applyReading(readMembership(result.data.text))
+      applyReading(mergeMembership(readMembership(sparse.data.text), readMembership(block.data.text)))
       setStatus("Bitte die erkannten Felder prüfen. Die IBAN ist nur in diesem Dialog sichtbar.")
     } catch {
       setStatus("Die Erkennung ist fehlgeschlagen. Die Felder können von Hand ausgefüllt werden.")
@@ -196,7 +273,6 @@ export default function MemberCapture() {
                   <div className="row g-3">
                     <Field id="familyName" label="Name" name="familyName" value={fields.familyName} onChange={(value) => setField("familyName", value)} required />
                     <Field id="givenName" label="Vorname" name="givenName" value={fields.givenName} onChange={(value) => setField("givenName", value)} required />
-                    <Field id="furtherNames" label="Weitere Antragsteller" name="furtherNames" value={fields.furtherNames} onChange={(value) => setField("furtherNames", value)} />
                     <Field id="street" label="Straße" name="street" value={fields.street} onChange={(value) => setField("street", value)} />
                     <Field id="houseNumber" label="Hausnummer" name="houseNumber" value={fields.houseNumber} onChange={(value) => setField("houseNumber", value)} />
                     <Field id="postalCode" label="PLZ" name="postalCode" value={fields.postalCode} onChange={(value) => setField("postalCode", value)} />
@@ -220,8 +296,6 @@ export default function MemberCapture() {
                         </div>
                       </div>
                     </div>
-                    <Field id="signedPlace" label="Ort der Unterschrift" name="signedPlace" value={fields.signedPlace} onChange={(value) => setField("signedPlace", value)} />
-                    <Field id="signedOn" label="Datum" name="signedOn" type="date" value={fields.signedOn} onChange={(value) => setField("signedOn", value)} />
                     <Field id="bankName" label="Name der Bank" name="bankName" value={fields.bankName} onChange={(value) => setField("bankName", value)} />
                     <Field id="iban" label="IBAN" name="iban" value={fields.iban} onChange={(value) => setField("iban", value)} hint="Nur hier sichtbar. Nach dem Speichern steht in der Liste ein Platzhalter." />
                     <Field id="accountHolder" label="Kontoinhaber" name="accountHolder" value={fields.accountHolder} onChange={(value) => setField("accountHolder", value)} />

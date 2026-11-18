@@ -1,13 +1,9 @@
-import { formatEuro, formatGermanDate } from "../lib/money"
+import { formatEuro } from "../lib/money"
 
 function address(member) {
   const street = [member.street, member.houseNumber].filter(Boolean).join(" ")
   const place = [member.postalCode, member.city].filter(Boolean).join(" ")
   return [street, place].filter(Boolean).join(", ")
-}
-
-function signed(member) {
-  return [member.signedPlace, formatGermanDate(member.signedOn)].filter(Boolean).join(", ")
 }
 
 function MemberFacts({ member }) {
@@ -22,8 +18,6 @@ function MemberFacts({ member }) {
       <dd className="col-7 text-break">{member.email || "—"}</dd>
       <dt className="col-5">Beitrag</dt>
       <dd className="col-7">{formatEuro(member.contributionCents)} €</dd>
-      <dt className="col-5">Ort, Datum</dt>
-      <dd className="col-7">{signed(member) || "—"}</dd>
       <dt className="col-5">Bank</dt>
       <dd className="col-7">{member.bankName || "—"}</dd>
       <dt className="col-5">IBAN</dt>
@@ -52,9 +46,6 @@ export default function MembersList({ members }) {
                       ? "Mitglied"
                       : [member.givenName, member.familyName].filter(Boolean).join(" ")}
                   </h2>
-                  {member.furtherNames ? (
-                    <p className="small text-secondary">{member.furtherNames}</p>
-                  ) : null}
                   <MemberFacts member={member} />
                 </div>
               </article>
@@ -83,10 +74,6 @@ export default function MembersList({ members }) {
                       ? "Nicht lesbar"
                       : [member.givenName, member.familyName].filter(Boolean).join(" ")}
                   </div>
-                  {member.furtherNames ? (
-                    <div className="small text-secondary">{member.furtherNames}</div>
-                  ) : null}
-                  <div className="small text-secondary">{signed(member)}</div>
                 </td>
                 <td>{address(member) || "—"}</td>
                 <td className="text-break">{member.email || "—"}</td>

@@ -540,14 +540,12 @@ export async function saveMember(formData) {
   else if (choice === "25") contributionCents = 2500
   else if (choice === "custom") contributionCents = parseEuroToCents(formData.get("contributionCustom"))
 
-  const signedOn = String(formData.get("signedOn") ?? "").trim()
   const email = limited(formData.get("email"), 160)
   const iban = cleanIban(formData.get("iban"))
   if (
     familyName.length < 1 ||
     givenNameValue.length < 1 ||
     contributionCents == null ||
-    (signedOn && !/^\d{4}-\d{2}-\d{2}$/.test(signedOn)) ||
     (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) ||
     (iban && !/^DE\d{20}$/.test(iban))
   ) {
@@ -558,15 +556,12 @@ export async function saveMember(formData) {
     await insertMember(user.id, {
       familyName,
       givenName: givenNameValue,
-      furtherNames: limited(formData.get("furtherNames"), 160),
       street: limited(formData.get("street"), 120),
       houseNumber: limited(formData.get("houseNumber"), 20),
       postalCode: limited(formData.get("postalCode"), 10),
       city: limited(formData.get("city"), 80),
       email,
       contributionCents,
-      signedPlace: limited(formData.get("signedPlace"), 80),
-      signedOn: signedOn || "",
       bankName: limited(formData.get("bankName"), 120),
       iban,
       accountHolder: limited(formData.get("accountHolder"), 120),
