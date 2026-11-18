@@ -17,7 +17,7 @@ export async function GET(request) {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition":
-        'attachment; filename="Foerderantraege-seit-Kassenpruefung.pdf"',
+        'attachment; filename="Foerderantraege.pdf"',
       "Cache-Control": "no-store",
     },
   })

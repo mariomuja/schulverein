@@ -12,15 +12,14 @@ Die Seite ist nicht für Suchmaschinen bestimmt. Ohne persönliche Anmeldung ers
 - Mit Ja oder Nein abstimmen. Genehmigt ist ein Antrag, wenn mehr als die Hälfte der Stimmberechtigten mit Ja stimmt.
 - Belege an offenen Anträgen hinterlegen (JPEG, PNG, WebP, GIF, HEIC, HEIF, PDF; höchstens 12 Dateien, je 4 MB) und in der Vorschau mit Lupe ansehen.
 - Die Abstimmung abschließen, sobald ein Beleg hinterlegt ist. Das kann nur der Schatzmeister. Danach sind Antrag, Stimmen und Belege festgeschrieben. Der Höchstbetrag darf über dem Betrag auf dem Beleg liegen.
-- Datum der letzten Kassenprüfung setzen. Die Gesamtsumme zeigt die genehmigten Beträge seit diesem Datum. Ein neueres Datum archiviert den bisherigen Zeitraum mit Anträgen, Stimmen und Belegen. Kontodaten werden nicht gespeichert.
-- Alle Anträge als CSV exportieren und die Anträge seit der Kassenprüfung als PDF.
+- Alle Anträge als CSV und als PDF exportieren. Kontodaten werden nicht gespeichert.
 - Benutzer mit Schreib- oder Leserecht anlegen, den persönlichen Zugangslink erneuern und Konten ohne abgegebene Stimme entfernen.
 
 Auf dem Notebook (ab 1200 px Breite) stehen die Anträge in einer Tabelle. Darunter erscheinen sie als Karten.
 
 ## Rechte
 
-Personen mit Schreibrecht legen Anträge an, stimmen ab, pflegen Belege und Benutzer und setzen das Datum der Kassenprüfung. Personen mit Leserecht sehen die Anträge und können CSV und PDF herunterladen. Abschließen bleibt dem Schatzmeister vorbehalten.
+Personen mit Schreibrecht legen Anträge an, stimmen ab, pflegen Belege und Benutzer. Personen mit Leserecht sehen die Anträge und können CSV und PDF herunterladen. Abschließen bleibt dem Schatzmeister vorbehalten.
 
 Neue Konten entstehen in der Benutzerverwaltung. Der Schatzmeister wird dort nicht neu vergeben.
 

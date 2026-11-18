@@ -1,11 +1,8 @@
 import Link from "next/link"
 import { boardHref } from "../lib/list-query"
-import { periodLabel } from "../lib/archive"
-import { formatEuro } from "../lib/money"
 import { givenName } from "../lib/names"
 import ApplicationCards from "./ApplicationCards"
 import ApplicationsTable from "./ApplicationsTable"
-import AuditDateForm from "./AuditDateForm"
 import DateSort from "./DateSort"
 import NewApplication from "./NewApplication"
 
@@ -51,11 +48,11 @@ function ExportLinks({ sort, primary = false }) {
     <>
       <a className={className} href={`/export?sort=${sort}`}>
         <i className="bi bi-download" aria-hidden="true" />
-        CSV exportieren
+        CSV
       </a>
       <a className={className} href="/export/pdf">
         <i className="bi bi-download" aria-hidden="true" />
-        PDF seit Kassenprüfung
+        PDF
       </a>
     </>
   )
@@ -92,38 +89,6 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
           {message}
         </div>
       ) : null}
-
-      <aside className="audit-note">
-        <AuditDateForm
-          canWrite={user.can_write}
-          defaultValue={data.lastAuditDate ?? ""}
-          min={data.archives.length ? data.lastAuditDate ?? "" : ""}
-        />
-        <p className="audit-note-sum">
-          Gesamtsumme genehmigter Förderanträge seit der letzten Kassenprüfung:{" "}
-          {formatEuro(data.approvedSumCents)} EUR
-        </p>
-        <div className="audit-archive">
-          <div className="audit-note-label">Archivierte Zeiträume</div>
-          {data.archives.length === 0 ? (
-            <p className="mb-0">Noch keiner.</p>
-          ) : (
-            <ul className="list-unstyled mb-0">
-              {data.archives.map((period) => (
-                <li key={period.id}>
-                  {periodLabel(period.period_start, period.period_end)}
-                  {" · "}
-                  {formatEuro(period.approved_sum_cents)} EUR
-                  {" · "}
-                  <a href={`/export/archiv/${period.id}/pdf`}>PDF</a>
-                  {" · "}
-                  <a href={`/export/archiv/${period.id}/csv`}>CSV</a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </aside>
 
       <div className="d-flex flex-column align-items-start gap-2 mb-3">
         <div className="d-flex flex-wrap gap-2 d-xl-none">
