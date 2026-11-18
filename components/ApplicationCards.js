@@ -54,10 +54,12 @@ export default function ApplicationCards({
               <div className="small text-secondary mb-1">Beleg</div>
               <Receipts application={application} user={user} />
             </div>
-            <p className="mb-2">
-              Bist du einverstanden, dass der Schulverein die Kosten für den
-              angegebenen Zweck bis zum angegebenen Höchstbetrag übernimmt?
-            </p>
+            {user.can_write ? (
+              <p className="mb-2">
+                Bist du einverstanden, dass der Schulverein die Kosten für den
+                angegebenen Zweck bis zum angegebenen Höchstbetrag übernimmt?
+              </p>
+            ) : null}
             <ul className="list-unstyled mb-2">
               {application.voters.map((writer) => (
                 <li className="d-flex align-items-center gap-2 py-1" key={writer.id}>
