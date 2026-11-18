@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { saveMember } from "../app/actions"
-import { mergeMembership, readMembership } from "../lib/membership-ocr"
+import { readHandwritingFields } from "../lib/membership-ocr"
 
 const empty = {
   familyName: "",
@@ -38,37 +38,118 @@ function Field({ id, label, name, value, onChange, type = "text", required = fal
   )
 }
 
+const fieldsOnPaper = [
+  ["name", 0.3, 0.206, 0.66, 0.234],
+  ["street", 0.3, 0.24, 0.68, 0.27],
+  ["place", 0.2, 0.272, 0.62, 0.298],
+  ["email", 0.12, 0.298, 0.66, 0.334],
+  ["amount", 0.54, 0.358, 0.78, 0.4],
+  ["bank", 0.24, 0.736, 0.76, 0.758],
+  ["iban", 0.16, 0.754, 0.7, 0.778],
+  ["holder", 0.24, 0.778, 0.68, 0.816],
+]
+
 function paperBounds(image) {
   const { data, width, height } = image
-  let minX = width
-  let minY = height
-  let maxX = 0
-  let maxY = 0
-  let count = 0
-  for (let y = 0; y < height; y += 8) {
-    for (let x = 0; x < width; x += 8) {
-      const index = (y * width + x) * 4
-      const red = data[index]
-      const green = data[index + 1]
-      const blue = data[index + 2]
-      if (Math.min(red, green, blue) > 170 && red + green + blue > 540) {
-        count += 1
-        minX = Math.min(minX, x)
-        minY = Math.min(minY, y)
-        maxX = Math.max(maxX, x)
-        maxY = Math.max(maxY, y)
+  const bright = new Uint8Array(width * height)
+  for (let index = 0; index < width * height; index += 1) {
+    const offset = index * 4
+    const red = data[offset]
+    const green = data[offset + 1]
+    const blue = data[offset + 2]
+    bright[index] = Math.min(red, green, blue) > 150 && red + green + blue > 480 ? 1 : 0
+  }
+  const seen = new Uint8Array(width * height)
+  let best = 0
+  let box = null
+  for (let start = 0; start < bright.length; start += 1) {
+    if (!bright[start] || seen[start]) continue
+    const stack = [start]
+    seen[start] = 1
+    let count = 0
+    let minX = width
+    let minY = height
+    let maxX = 0
+    let maxY = 0
+    while (stack.length) {
+      const current = stack.pop()
+      count += 1
+      const x = current % width
+      const y = (current - x) / width
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x)
+      maxY = Math.max(maxY, y)
+      const neighbors = [current - 1, current + 1, current - width, current + width]
+      for (const next of neighbors) {
+        if (next < 0 || next >= bright.length || seen[next] || !bright[next]) continue
+        if ((next === current - 1 || next === current + 1) && Math.floor(next / width) !== y) continue
+        seen[next] = 1
+        stack.push(next)
       }
     }
+    if (count > best) {
+      best = count
+      box = { minX, minY, maxX, maxY }
+    }
   }
-  if (count < 40 || maxX <= minX) return null
-  const x = Math.max(0, minX - 8)
-  const y = Math.max(0, minY - 8)
-  return {
-    x,
-    y,
-    width: Math.min(width, maxX + 8) - x,
-    height: Math.min(height, maxY + 8) - y,
+  if (!box || best < 40) return null
+  return box
+}
+
+function blurredSheet(source) {
+  const width = Math.max(1, Math.round(source.width / 8))
+  const height = Math.max(1, Math.round(source.height / 8))
+  const canvas = document.createElement("canvas")
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext("2d", { willReadFrequently: true })
+  context.drawImage(source, 0, 0, width, height)
+  const image = context.getImageData(0, 0, width, height)
+  const radius = 4
+  const temporary = new Uint8ClampedArray(image.data.length)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      let red = 0
+      let green = 0
+      let blue = 0
+      let count = 0
+      for (let offset = -radius; offset <= radius; offset += 1) {
+        const sample = Math.min(width - 1, Math.max(0, x + offset))
+        const index = (y * width + sample) * 4
+        red += image.data[index]
+        green += image.data[index + 1]
+        blue += image.data[index + 2]
+        count += 1
+      }
+      const target = (y * width + x) * 4
+      temporary[target] = red / count
+      temporary[target + 1] = green / count
+      temporary[target + 2] = blue / count
+    }
   }
+  for (let x = 0; x < width; x += 1) {
+    for (let y = 0; y < height; y += 1) {
+      let red = 0
+      let green = 0
+      let blue = 0
+      let count = 0
+      for (let offset = -radius; offset <= radius; offset += 1) {
+        const sample = Math.min(height - 1, Math.max(0, y + offset))
+        const index = (sample * width + x) * 4
+        red += temporary[index]
+        green += temporary[index + 1]
+        blue += temporary[index + 2]
+        count += 1
+      }
+      const target = (y * width + x) * 4
+      image.data[target] = red / count
+      image.data[target + 1] = green / count
+      image.data[target + 2] = blue / count
+      image.data[target + 3] = 255
+    }
+  }
+  return image
 }
 
 async function canvasFromFile(file) {
@@ -84,35 +165,132 @@ async function canvasFromFile(file) {
   }
   orientedContext.drawImage(bitmap, 0, 0)
   bitmap.close?.()
-  const bounds = paperBounds(orientedContext.getImageData(0, 0, oriented.width, oriented.height))
-  const source = bounds ?? { x: 0, y: 0, width: oriented.width, height: oriented.height }
-  const scale = Math.min(2, 2200 / Math.max(source.width, source.height, 1))
+  const sheet = paperBounds(blurredSheet(oriented))
+  const source = sheet
+    ? {
+        x: sheet.minX * 8,
+        y: sheet.minY * 8,
+        width: Math.max(1, (sheet.maxX - sheet.minX) * 8),
+        height: Math.max(1, (sheet.maxY - sheet.minY) * 8),
+      }
+    : { x: 0, y: 0, width: oriented.width, height: oriented.height }
   const canvas = document.createElement("canvas")
-  canvas.width = Math.round(source.width * Math.max(scale, 1))
-  canvas.height = Math.round(source.height * Math.max(scale, 1))
-  const context = canvas.getContext("2d", { willReadFrequently: true })
-  context.drawImage(
-    oriented,
-    source.x,
-    source.y,
-    source.width,
-    source.height,
-    0,
-    0,
-    canvas.width,
-    canvas.height,
-  )
-  const image = context.getImageData(0, 0, canvas.width, canvas.height)
-  const data = image.data
-  for (let index = 0; index < data.length; index += 4) {
-    const gray = data[index] * 0.3 + data[index + 1] * 0.59 + data[index + 2] * 0.11
-    const contrast = Math.min(255, Math.max(0, (gray - 128) * 1.2 + 128))
-    data[index] = contrast
-    data[index + 1] = contrast
-    data[index + 2] = contrast
-  }
-  context.putImageData(image, 0, 0)
+  canvas.width = source.width
+  canvas.height = source.height
+  canvas.getContext("2d").drawImage(oriented, source.x, source.y, source.width, source.height, 0, 0, canvas.width, canvas.height)
   return canvas
+}
+
+function handwritingLine(page, box) {
+  const [, x0, y0, x1, y1] = box
+  const width = Math.max(1, Math.round((x1 - x0) * page.width))
+  const height = Math.max(1, Math.round((y1 - y0) * page.height))
+  const crop = document.createElement("canvas")
+  crop.width = width
+  crop.height = height
+  const context = crop.getContext("2d", { willReadFrequently: true })
+  context.drawImage(page, x0 * page.width, y0 * page.height, width, height, 0, 0, width, height)
+  const image = context.getImageData(0, 0, width, height)
+  const gray = new Uint8ClampedArray(width * height)
+  let darkest = 255
+  let lightest = 0
+  for (let index = 0; index < gray.length; index += 1) {
+    const offset = index * 4
+    const value = Math.min(image.data[offset], image.data[offset + 1], image.data[offset + 2])
+    gray[index] = value
+    darkest = Math.min(darkest, value)
+    lightest = Math.max(lightest, value)
+  }
+  const span = Math.max(1, lightest - darkest)
+  for (let index = 0; index < gray.length; index += 1) {
+    gray[index] = Math.min(255, Math.max(0, ((gray[index] - darkest) / span) * 255))
+  }
+  const ruleRows = new Uint8Array(height)
+  for (let y = 0; y < height; y += 1) {
+    let dark = 0
+    for (let x = 0; x < width; x += 1) if (gray[y * width + x] < 170) dark += 1
+    if (dark > width * 0.22) {
+      for (let offset = -2; offset <= 2; offset += 1) {
+        if (y + offset >= 0 && y + offset < height) ruleRows[y + offset] = 1
+      }
+    }
+  }
+  let minX = width
+  let minY = height
+  let maxX = 0
+  let maxY = 0
+  for (let y = 0; y < height; y += 1) {
+    if (ruleRows[y]) continue
+    for (let x = 0; x < width; x += 1) {
+      if (gray[y * width + x] >= 120) continue
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x)
+      maxY = Math.max(maxY, y)
+    }
+  }
+  if (maxX <= minX) {
+    minX = 0
+    minY = 0
+    maxX = width - 1
+    maxY = height - 1
+  }
+  const line = document.createElement("canvas")
+  const sourceWidth = Math.max(1, maxX - minX + 20)
+  const sourceHeight = Math.max(1, maxY - minY + 16)
+  const scale = Math.max(1, 220 / sourceHeight)
+  line.width = Math.round(sourceWidth * scale) + 48
+  line.height = Math.round(sourceHeight * scale) + 48
+  const lineContext = line.getContext("2d")
+  lineContext.fillStyle = "#fff"
+  lineContext.fillRect(0, 0, line.width, line.height)
+  const cropX = Math.max(0, minX - 10)
+  const cropY = Math.max(0, minY - 8)
+  const source = context.getImageData(
+    cropX,
+    cropY,
+    Math.max(1, Math.min(width - cropX, sourceWidth)),
+    Math.max(1, Math.min(height - cropY, sourceHeight)),
+  )
+  const ink = document.createElement("canvas")
+  ink.width = source.width
+  ink.height = source.height
+  const inkContext = ink.getContext("2d")
+  const inkImage = inkContext.createImageData(source.width, source.height)
+  for (let index = 0; index < source.width * source.height; index += 1) {
+    const offset = index * 4
+    const value = Math.min(source.data[offset], source.data[offset + 1], source.data[offset + 2])
+    const stretched = Math.min(255, Math.max(0, ((value - darkest) / span) * 255))
+    inkImage.data[offset] = stretched
+    inkImage.data[offset + 1] = stretched
+    inkImage.data[offset + 2] = stretched
+    inkImage.data[offset + 3] = 255
+  }
+  inkContext.putImageData(inkImage, 0, 0)
+  lineContext.drawImage(ink, 24, 24, Math.round(source.width * scale), Math.round(source.height * scale))
+  return line
+}
+
+let readerPromise
+
+function handwritingReader() {
+  if (!readerPromise) {
+    readerPromise = import("@huggingface/transformers")
+      .then(({ pipeline, env }) => {
+        env.allowLocalModels = false
+        return pipeline("image-to-text", "Xenova/trocr-small-handwritten")
+      })
+      .catch((error) => {
+        readerPromise = null
+        throw error
+      })
+  }
+  return readerPromise
+}
+
+function lineText(result) {
+  if (Array.isArray(result)) return result.map((item) => item.generated_text ?? "").join(" ")
+  return String(result?.generated_text ?? "")
 }
 
 export default function MemberCapture() {
@@ -171,34 +349,7 @@ export default function MemberCapture() {
     }
   }
 
-  function scorePrint(text) {
-  const value = String(text ?? "").toLowerCase()
-  return ["beitritt", "schulverein", "straße", "strasse", "iban", "beitrag", "konto"].filter((word) =>
-    value.includes(word),
-  ).length
-}
-
-function downscale(source, longSide) {
-  const scale = Math.min(1, longSide / Math.max(source.width, source.height, 1))
-  const canvas = document.createElement("canvas")
-  canvas.width = Math.max(1, Math.round(source.width * scale))
-  canvas.height = Math.max(1, Math.round(source.height * scale))
-  canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height)
-  return canvas
-}
-
-function rotate180(source) {
-  const canvas = document.createElement("canvas")
-  canvas.width = source.width
-  canvas.height = source.height
-  const context = canvas.getContext("2d")
-  context.translate(canvas.width, canvas.height)
-  context.rotate(Math.PI)
-  context.drawImage(source, 0, 0)
-  return canvas
-}
-
-async function onFile(event) {
+  async function onFile(event) {
     const file = event.target.files?.[0]
     event.target.value = ""
     if (!file) return
@@ -207,34 +358,21 @@ async function onFile(event) {
     setFields(empty)
     setChoice("")
     setCustomAmount("")
-    setStatus("Die Handschrift wird gelesen. Das Foto bleibt in diesem Browser.")
+    setStatus("Das Handschriftmodell wird geladen. Das Foto bleibt in diesem Browser.")
     try {
       if (!file.type.startsWith("image/") || file.size > 8 * 1024 * 1024) {
         throw new Error("datei")
       }
-      let canvas = await canvasFromFile(file)
-      const { createWorker } = await import("tesseract.js")
-      const worker = await createWorker("deu", 1, {
-        logger: (message) => {
-          if (message.status === "recognizing text" && typeof message.progress === "number") {
-            setStatus(`Die Handschrift wird gelesen … ${Math.round(message.progress * 100)} %`)
-          }
-        },
-      })
-      await worker.setParameters({ tessedit_pageseg_mode: "6" })
-      const preview = await worker.recognize(downscale(canvas, 1000))
-      const previewScore = scorePrint(preview.data.text)
-      if (previewScore < 2) {
-        const flipped = rotate180(canvas)
-        const flippedPreview = await worker.recognize(downscale(flipped, 1000))
-        if (scorePrint(flippedPreview.data.text) > previewScore) canvas = flipped
+      const page = await canvasFromFile(file)
+      const reader = await handwritingReader()
+      const parts = {}
+      for (let index = 0; index < fieldsOnPaper.length; index += 1) {
+        const field = fieldsOnPaper[index]
+        setStatus(`Die Handschrift wird gelesen … ${index + 1} von ${fieldsOnPaper.length}`)
+        const line = handwritingLine(page, field)
+        parts[field[0]] = lineText(await reader(line))
       }
-      await worker.setParameters({ tessedit_pageseg_mode: "11" })
-      const sparse = await worker.recognize(canvas)
-      await worker.setParameters({ tessedit_pageseg_mode: "6" })
-      const block = await worker.recognize(canvas)
-      await worker.terminate()
-      applyReading(mergeMembership(readMembership(sparse.data.text), readMembership(block.data.text)))
+      applyReading(readHandwritingFields(parts))
       setStatus("Bitte die erkannten Felder prüfen. Die IBAN ist nur in diesem Dialog sichtbar.")
     } catch {
       setStatus("Die Erkennung ist fehlgeschlagen. Die Felder können von Hand ausgefüllt werden.")
