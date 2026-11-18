@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { boardHref } from "../lib/list-query"
 import { givenName } from "../lib/names"
+import SectionTabs from "./SectionTabs"
 import ApplicationCards from "./ApplicationCards"
 import ApplicationsTable from "./ApplicationsTable"
 import DateSort from "./DateSort"
@@ -73,6 +74,7 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
 
   return (
     <>
+      <SectionTabs user={user} active="antraege" />
       <div className="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
         <h1 className="h4 mb-0">Förderanträge</h1>
         <p className="mb-0 text-secondary">

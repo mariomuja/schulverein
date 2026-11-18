@@ -13,6 +13,8 @@ import { givenName, hasGivenAndFamilyName } from "../lib/names"
 import { archivePeriod } from "../lib/archive"
 import { appendLog, sealApplication } from "../lib/seal"
 import { acceptReceipt, maxReceipts } from "../lib/receipts"
+import { canWriteMembers, ensureAccess } from "../lib/access"
+import { insertMember } from "../lib/members"
 import { hashSecret } from "../lib/secret"
 
 function applicationId(formData) {
@@ -324,7 +326,10 @@ export async function addUser(formData) {
 
   const name = givenName(cleanName(formData.get("name")))
   const roleLabel = cleanName(formData.get("roleLabel"))
-  const canWrite = formData.get("canWrite") === "on"
+  const canWrite = formData.get("applicationsAccess") === "write" || formData.get("canWrite") === "on"
+  const membersAccess = ["read", "write"].includes(String(formData.get("membersAccess")))
+    ? String(formData.get("membersAccess"))
+    : "none"
   if (name.length < 1 || name.length > 120 || roleLabel.length > 80) {
     redirect("/?hinweis=benutzer")
   }
@@ -332,21 +337,22 @@ export async function addUser(formData) {
   const token = randomBytes(32).toString("base64url")
   let created
   try {
+    await ensureAccess()
     created = await withTransaction(async (q) => {
       const inserted = await q(
-        `INSERT INTO users (name, role_label, can_write, is_treasurer, sort_order, login_token)
+        `INSERT INTO users (name, role_label, can_write, members_access, is_treasurer, sort_order, login_token)
          VALUES (
-           $1, $2, $3, FALSE,
+           $1, $2, $3, $4, FALSE,
            (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM users),
-           $4
+           $5
          )
          RETURNING id`,
-        [name, roleLabel || null, canWrite, hashSecret(token)],
+        [name, roleLabel || null, canWrite, membersAccess, hashSecret(token)],
       )
       await appendLog(q, {
         user,
         action: "benutzer_angelegt",
-        detail: `${name}, ${canWrite ? "Schreibrecht" : "Leserecht"}.`,
+        detail: `${name}, Förderanträge ${canWrite ? "Schreibrecht" : "Leserecht"}, Mitglieder ${membersAccess}.`,
       })
       return inserted.rows[0]
     })
@@ -484,6 +490,92 @@ export async function removeUser(formData) {
     redirect("/?hinweis=stimme")
   }
   revalidatePath("/")
+}
+
+function limited(value, max) {
+  return String(value ?? "").trim().slice(0, max)
+}
+
+function cleanIban(value) {
+  return String(value ?? "")
+    .replace(/[^A-Za-z0-9]/g, "")
+    .toUpperCase()
+}
+
+export async function updateUserAccess(formData) {
+  const user = await getUser()
+  if (!user?.can_write) redirect("/?hinweis=recht")
+  const id = userId(formData)
+  const applicationsWrite = formData.get("applicationsAccess") === "write"
+  const membersAccess = String(formData.get("membersAccess") ?? "none")
+  if (!id || !["none", "read", "write"].includes(membersAccess)) redirect("/?hinweis=benutzer")
+  await ensureAccess()
+  const updated = await query(
+    `UPDATE users SET can_write = $2, members_access = $3 WHERE id = $1 RETURNING name`,
+    [id, applicationsWrite, membersAccess],
+  )
+  if (!updated.rows[0]) redirect("/?hinweis=benutzer")
+  await query(
+    `INSERT INTO audit_log (actor_user_id, actor_name, action, detail)
+     VALUES ($1, $2, 'rechte', $3)`,
+    [
+      user.id,
+      user.name,
+      `${updated.rows[0].name}: Förderanträge ${applicationsWrite ? "Schreibrecht" : "Leserecht"}, Mitglieder ${membersAccess}.`,
+    ],
+  )
+  revalidatePath("/")
+  revalidatePath("/mitglieder")
+}
+
+export async function saveMember(formData) {
+  const user = await getUser()
+  if (!canWriteMembers(user)) redirect("/")
+
+  const familyName = limited(formData.get("familyName"), 80)
+  const givenNameValue = limited(formData.get("givenName"), 80)
+  const choice = String(formData.get("contributionChoice") ?? "")
+  let contributionCents = null
+  if (choice === "22") contributionCents = 2200
+  else if (choice === "25") contributionCents = 2500
+  else if (choice === "custom") contributionCents = parseEuroToCents(formData.get("contributionCustom"))
+
+  const signedOn = String(formData.get("signedOn") ?? "").trim()
+  const email = limited(formData.get("email"), 160)
+  const iban = cleanIban(formData.get("iban"))
+  if (
+    familyName.length < 1 ||
+    givenNameValue.length < 1 ||
+    contributionCents == null ||
+    (signedOn && !/^\d{4}-\d{2}-\d{2}$/.test(signedOn)) ||
+    (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) ||
+    (iban && !/^DE\d{20}$/.test(iban))
+  ) {
+    redirect("/mitglieder?hinweis=mitglied")
+  }
+
+  try {
+    await insertMember(user.id, {
+      familyName,
+      givenName: givenNameValue,
+      furtherNames: limited(formData.get("furtherNames"), 160),
+      street: limited(formData.get("street"), 120),
+      houseNumber: limited(formData.get("houseNumber"), 20),
+      postalCode: limited(formData.get("postalCode"), 10),
+      city: limited(formData.get("city"), 80),
+      email,
+      contributionCents,
+      signedPlace: limited(formData.get("signedPlace"), 80),
+      signedOn: signedOn || "",
+      bankName: limited(formData.get("bankName"), 120),
+      iban,
+      accountHolder: limited(formData.get("accountHolder"), 120),
+    })
+  } catch {
+    redirect("/mitglieder?hinweis=schluessel")
+  }
+  revalidatePath("/mitglieder")
+  redirect("/mitglieder")
 }
 
 export async function logout() {

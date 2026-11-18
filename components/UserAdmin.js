@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { addUser, deactivateUserToken, removeUser, renewUserToken } from "../app/actions"
+import { addUser, deactivateUserToken, removeUser, renewUserToken, updateUserAccess } from "../app/actions"
 import { givenName } from "../lib/names"
 import CopyTokenButton from "./CopyTokenButton"
 
@@ -108,6 +108,10 @@ export default function UserAdmin({ accounts, canManage = false }) {
                         ist nur möglich, solange der Nutzer noch nicht an Abstimmungen teilgenommen
                         hat.
                       </li>
+                      <li>
+                        <span className="fw-semibold">Rechte:</span> für Förderanträge Leserecht oder
+                        Schreibrecht, für Mitglieder kein Zugang, Leserecht oder Schreibrecht.
+                      </li>
                     </ul>
                   </div>
                   {message ? (
@@ -133,6 +137,43 @@ export default function UserAdmin({ accounts, canManage = false }) {
                           {account.canWrite ? "Schreibrecht" : "Leserecht"}
                           {!account.tokenActive ? " · Token deaktiviert" : ""}
                         </div>
+                        <form action={updateUserAccess} className="row g-2 align-items-end mb-2">
+                          <input type="hidden" name="userId" value={account.id} />
+                          <div className="col-12 col-md-4">
+                            <label className="form-label small mb-1" htmlFor={`applications-${account.id}`}>
+                              Förderanträge
+                            </label>
+                            <select
+                              id={`applications-${account.id}`}
+                              className="form-select form-select-sm"
+                              name="applicationsAccess"
+                              defaultValue={account.canWrite ? "write" : "read"}
+                            >
+                              <option value="read">Leserecht</option>
+                              <option value="write">Schreibrecht</option>
+                            </select>
+                          </div>
+                          <div className="col-12 col-md-4">
+                            <label className="form-label small mb-1" htmlFor={`members-${account.id}`}>
+                              Mitglieder
+                            </label>
+                            <select
+                              id={`members-${account.id}`}
+                              className="form-select form-select-sm"
+                              name="membersAccess"
+                              defaultValue={account.membersAccess ?? "none"}
+                            >
+                              <option value="none">Kein Zugang</option>
+                              <option value="read">Leserecht</option>
+                              <option value="write">Schreibrecht</option>
+                            </select>
+                          </div>
+                          <div className="col-12 col-md-4">
+                            <button className="btn btn-outline-primary btn-sm" type="submit">
+                              Rechte speichern
+                            </button>
+                          </div>
+                        </form>
                         {account.canWrite ? (
                           <div className="d-flex flex-wrap gap-2">
                             {account.tokenActive ? (
@@ -219,18 +260,24 @@ export default function UserAdmin({ accounts, canManage = false }) {
                         placeholder="optional"
                       />
                     </div>
-                    <div className="col-12 col-md-3 d-flex align-items-end">
-                      <div className="form-check mb-2">
-                        <input
-                          id="canWrite"
-                          className="form-check-input"
-                          type="checkbox"
-                          name="canWrite"
-                        />
-                        <label className="form-check-label" htmlFor="canWrite">
-                          Schreibrecht
-                        </label>
-                      </div>
+                    <div className="col-6 col-md-3">
+                      <label className="form-label" htmlFor="applicationsAccess">
+                        Förderanträge
+                      </label>
+                      <select id="applicationsAccess" className="form-select" name="applicationsAccess" defaultValue="read">
+                        <option value="read">Leserecht</option>
+                        <option value="write">Schreibrecht</option>
+                      </select>
+                    </div>
+                    <div className="col-6 col-md-3">
+                      <label className="form-label" htmlFor="membersAccess">
+                        Mitglieder
+                      </label>
+                      <select id="membersAccess" className="form-select" name="membersAccess" defaultValue="none">
+                        <option value="none">Kein Zugang</option>
+                        <option value="read">Leserecht</option>
+                        <option value="write">Schreibrecht</option>
+                      </select>
                     </div>
                     <div className="col-12">
                       <button className="btn btn-primary save-btn" type="submit">
