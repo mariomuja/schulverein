@@ -46,9 +46,9 @@ export default function ApplicationCards({
                 <div className="fs-5 fw-semibold text-nowrap">
                   {formatEuro(application.amount_cents)} €
                 </div>
-                <StatusIcon approved={application.approved} />
               </div>
             </div>
+            <StatusIcon application={application} />
             <p className="purpose purpose-mobile mt-2 mb-3">{application.purpose}</p>
             <div className="mb-3">
               <div className="small text-secondary mb-1">Beleg</div>

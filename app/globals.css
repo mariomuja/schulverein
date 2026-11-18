@@ -31,6 +31,37 @@ body {
   color: #0a3d7a;
 }
 
+.status-mark {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.status-mark-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.status-mark .bi {
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.applications-table .status-mark {
+  flex-direction: column;
+  align-items: center;
+  margin-top: 0;
+  text-align: center;
+  gap: 0.25rem;
+}
+
+.applications-table .status-mark-text {
+  font-size: 0.7rem;
+}
+
 @media (max-width: 1199.98px) {
   a.btn.export-btn {
     --bs-btn-color: #0a3d7a;

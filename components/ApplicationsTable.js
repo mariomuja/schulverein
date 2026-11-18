@@ -429,7 +429,7 @@ export default function ApplicationsTable({
                       )
                     })}
                     <td className="text-center">
-                      <StatusIcon approved={application.approved} />
+                      <StatusIcon application={application} />
                     </td>
                     <td>
                       <CloseControl application={application} user={user} />

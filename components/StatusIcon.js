@@ -1,14 +1,15 @@
-export default function StatusIcon({ approved }) {
-  if (approved) {
-    return (
-      <span className="text-success" role="img" aria-label="genehmigt">
-        <i className="bi bi-check-circle-fill fs-4" aria-hidden="true" />
-      </span>
-    )
-  }
+import { statusSentence } from "../lib/decision"
+
+export default function StatusIcon({ application }) {
+  const approved = Boolean(application.approved)
   return (
-    <span className="text-danger" role="img" aria-label="nicht genehmigt">
-      <i className="bi bi-x-circle-fill fs-4" aria-hidden="true" />
+    <span className="status-mark">
+      <span className="status-mark-text">{statusSentence(application)}</span>
+      <span className={approved ? "text-success" : "text-danger"} aria-hidden="true">
+        <i
+          className={`bi ${approved ? "bi-check-circle-fill" : "bi-x-circle-fill"} fs-4`}
+        />
+      </span>
     </span>
   )
 }
