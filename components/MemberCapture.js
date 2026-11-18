@@ -251,7 +251,12 @@ export default function MemberCapture() {
           <span className="visually-hidden">Beitrittserklärung fotografieren</span>
           <input className="visually-hidden" type="file" accept="image/*" capture="environment" onChange={onFile} />
         </label>
-        <span className="small text-secondary">Foto der Beitrittserklärung lesen</span>
+        <label className="btn btn-sm btn-outline-secondary receipt-add mb-0">
+          <i className="bi bi-image" aria-hidden="true" />
+          <span className="visually-hidden">Vorhandenes Foto auswählen</span>
+          <input className="visually-hidden" type="file" accept="image/*" onChange={onFile} />
+        </label>
+        <span className="small text-secondary">Aufnehmen oder vorhandenes Foto wählen</span>
       </div>
       {dialog}
     </>
