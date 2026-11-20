@@ -4,7 +4,7 @@ import MembersList from "../../components/MembersList"
 import SectionTabs from "../../components/SectionTabs"
 import { canEditMembers, canReadMembers } from "../../lib/access"
 import { getUser } from "../../lib/auth"
-import { countMembers, familyLetter, getMember, listDeletedMembers, listMembers, withoutBankData } from "../../lib/members"
+import { familyLetter, getMember, listDeletedMembers, listMembers, withoutBankData } from "../../lib/members"
 
 export const dynamic = "force-dynamic"
 
@@ -13,6 +13,20 @@ export const metadata = {
 }
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
+
+function listedMember(member) {
+  return {
+    id: member.id,
+    memberNumber: member.memberNumber ?? "",
+    familyName: member.familyName ?? "",
+    givenName: member.givenName ?? "",
+    email: member.email ?? "",
+    contributionCents: member.contributionCents ?? null,
+    joinedOn: member.joinedOn ?? "",
+    letter: member.letter ?? "",
+    unreadable: Boolean(member.unreadable),
+  }
+}
 
 function filled(value) {
   return String(value ?? "").trim() !== ""
@@ -42,13 +56,10 @@ export default async function MembersPage({ searchParams }) {
   const hinweis = Array.isArray(params.hinweis) ? params.hinweis[0] : params.hinweis
   const requested = Array.isArray(params.buchstabe) ? params.buchstabe[0] : params.buchstabe
   const letter = familyLetter(requested)
-  const count = await countMembers()
-
-  let members = []
+  const members = await listMembers()
   let deletedMembers = []
   let editing = null
   if (editor) {
-    members = await listMembers()
     deletedMembers = await listDeletedMembers()
     const editId = Number(Array.isArray(params.bearbeiten) ? params.bearbeiten[0] : params.bearbeiten)
     if (Number.isInteger(editId) && editId > 0) editing = withoutBankData(await getMember(editId))
@@ -86,9 +97,7 @@ export default async function MembersPage({ searchParams }) {
           ) : null}
         </div>
       ) : null}
-      {editor ? (
-        <>
-          <nav className="d-flex flex-wrap gap-1 mb-3" aria-label="Nach Nachnamen filtern">
+      <nav className="d-flex flex-wrap gap-1 mb-3" aria-label="Nach Nachnamen filtern">
             <a className={`btn btn-sm ${letter ? "btn-outline-secondary" : "btn-secondary"}`} href="/mitglieder">
               Alle
             </a>
@@ -109,12 +118,8 @@ export default async function MembersPage({ searchParams }) {
               )
             ))}
           </nav>
-          <MembersList members={shown} deletedMembers={deletedMembers} letter={letter} />
+          <MembersList members={shown.map(listedMember)} deletedMembers={deletedMembers} letter={letter} canEdit={editor} />
           {editing ? <MemberForm key={editing.id} member={editing} letter={letter} /> : null}
-        </>
-      ) : (
-        <p className="mb-0">Der Schulverein hat derzeit {count} {count === 1 ? "Mitglied" : "Mitglieder"}.</p>
-      )}
     </>
   )
 }

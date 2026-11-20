@@ -112,10 +112,10 @@ function DeleteButton({ member, onAsk }) {
   )
 }
 
-function readWidths() {
+function readWidths(key, count) {
   try {
-    const saved = JSON.parse(localStorage.getItem(storageKey) ?? "")
-    if (!Array.isArray(saved) || saved.length !== columns.length + 1) return null
+    const saved = JSON.parse(localStorage.getItem(key) ?? "")
+    if (!Array.isArray(saved) || saved.length !== count) return null
     if (!saved.every((value) => typeof value === "number" && value > 0)) return null
     return saved
   } catch {
@@ -142,7 +142,7 @@ function deletedLabel(member) {
   return [member.familyName, member.givenName].filter(Boolean).join(", ") || "Ohne Namen"
 }
 
-export default function MembersList({ members, deletedMembers = [], letter }) {
+export default function MembersList({ members, deletedMembers = [], letter, canEdit = false }) {
   const router = useRouter()
   const wrapRef = useRef(null)
   const tableRef = useRef(null)
@@ -155,6 +155,8 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
   const [pendingDelete, setPendingDelete] = useState(null)
   const [selectedDeleted, setSelectedDeleted] = useState("")
   const [pendingRestore, setPendingRestore] = useState(null)
+  const widthCount = columns.length + (canEdit ? 1 : 0)
+  const widthKey = canEdit ? storageKey : `${storageKey}-read`
 
   const rows = useMemo(() => {
     const tokens = fold(query).split(/\s+/).filter(Boolean)
@@ -192,7 +194,7 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
       placeLines()
     }
 
-    const saved = readWidths()
+    const saved = readWidths(widthKey, widthCount)
     if (saved) applyPercents(saved)
     placeLines()
 
@@ -207,7 +209,7 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
       observer.disconnect()
       window.removeEventListener("resize", placeLines)
     }
-  }, [rows])
+  }, [rows, canEdit, widthKey, widthCount])
 
   useEffect(() => {
     if (!pendingDelete && !pendingRestore) return undefined
@@ -299,7 +301,7 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
       line.removeEventListener("pointerup", onUp)
       line.removeEventListener("pointercancel", onUp)
       const percents = apply(headers.map((header) => header.getBoundingClientRect().width))
-      localStorage.setItem(storageKey, JSON.stringify(percents))
+      localStorage.setItem(widthKey, JSON.stringify(percents))
     }
 
     line.addEventListener("pointermove", onMove)
@@ -323,6 +325,7 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
           autoComplete="off"
         />
       </div>
+      {canEdit ? (
       <div className="deleted-members-bar d-flex flex-column flex-xl-row align-items-xl-center gap-2 mb-3">
         <label className="form-label small mb-0 text-nowrap" htmlFor="deleted-members">
           Gelöschte Mitglieder
@@ -352,6 +355,7 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
           </button>
         ) : null}
       </div>
+      ) : null}
       {rows.length === 0 ? (
         <p className="text-secondary mb-0">
           {query.trim() ? "Keine Mitglieder für diese Suche." : "Keine Mitglieder für diesen Anfangsbuchstaben."}
@@ -365,20 +369,20 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
                 return (
                   <div className="col-12 col-md-6" key={member.id}>
                     <article
-                      className="card h-100 member-row"
-                      role="button"
-                      tabIndex={member.unreadable ? -1 : 0}
-                      aria-label={`${person(member)} ändern`}
-                      aria-disabled={member.unreadable || undefined}
+                      className={`card h-100${canEdit ? " member-row" : ""}`}
+                      role={canEdit ? "button" : undefined}
+                      tabIndex={canEdit && !member.unreadable ? 0 : undefined}
+                      aria-label={canEdit ? `${person(member)} ändern` : undefined}
+                      aria-disabled={canEdit && member.unreadable ? true : undefined}
                       onClick={(event) => {
-                        if (!member.unreadable) openEdit(event, router, href)
+                        if (canEdit && !member.unreadable) openEdit(event, router, href)
                       }}
                       onKeyDown={(event) => {
-                        if (!member.unreadable) openEdit(event, router, href)
+                        if (canEdit && !member.unreadable) openEdit(event, router, href)
                       }}
                     >
                       <div className="card-body member-card-body">
-                        <DeleteButton member={member} onAsk={setPendingDelete} />
+                        {canEdit ? <DeleteButton member={member} onAsk={setPendingDelete} /> : null}
                         <h2 className="h6 mb-3">{person(member)}</h2>
                         <dl className="row mb-0 small">
                           <dt className="col-5">Nr.</dt>
@@ -409,7 +413,7 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
                   {columns.map((column) => (
                     <col className={column.className} key={column.key} />
                   ))}
-                  <col className="col-delete" />
+                  {canEdit ? <col className="col-delete" /> : null}
                 </colgroup>
                 <thead>
                   <tr>
@@ -434,7 +438,7 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
                         </th>
                       )
                     })}
-                    <th className="member-delete-col" data-floor="44" aria-label="Löschen" />
+                    {canEdit ? <th className="member-delete-col" data-floor="44" aria-label="Löschen" /> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -443,16 +447,16 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
                     return (
                       <tr
                         key={member.id}
-                        className="member-row"
-                        role="button"
-                        tabIndex={member.unreadable ? -1 : 0}
-                        aria-label={`${person(member)} ändern`}
-                        aria-disabled={member.unreadable || undefined}
+                        className={canEdit ? "member-row" : undefined}
+                        role={canEdit ? "button" : undefined}
+                        tabIndex={canEdit && !member.unreadable ? 0 : undefined}
+                        aria-label={canEdit ? `${person(member)} ändern` : undefined}
+                        aria-disabled={canEdit && member.unreadable ? true : undefined}
                         onClick={(event) => {
-                          if (!member.unreadable) openEdit(event, router, href)
+                          if (canEdit && !member.unreadable) openEdit(event, router, href)
                         }}
                         onKeyDown={(event) => {
-                          if (!member.unreadable) openEdit(event, router, href)
+                          if (canEdit && !member.unreadable) openEdit(event, router, href)
                         }}
                       >
                         <td>{member.memberNumber || "—"}</td>
@@ -460,15 +464,17 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
                         <td>{entryDate(member.joinedOn)}</td>
                         <td>{member.email || "—"}</td>
                         <td>{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</td>
-                        <td className="member-delete-col">
-                          <DeleteButton member={member} onAsk={setPendingDelete} />
-                        </td>
+                        {canEdit ? (
+                          <td className="member-delete-col">
+                            <DeleteButton member={member} onAsk={setPendingDelete} />
+                          </td>
+                        ) : null}
                       </tr>
                     )
                   })}
                 </tbody>
               </table>
-              {columns.map((column, index) => (
+              {(canEdit ? columns : columns.slice(0, -1)).map((column, index) => (
                 <div
                   key={column.key}
                   className="col-line"
