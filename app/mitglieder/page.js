@@ -37,6 +37,7 @@ export default async function MembersPage({ searchParams }) {
   if (!user) redirect("/")
   const editor = canEditMembers(user)
   const reader = canReadMembers(user)
+  if (!reader) redirect("/statistik")
   const params = await searchParams
   const hinweis = Array.isArray(params.hinweis) ? params.hinweis[0] : params.hinweis
   const requested = Array.isArray(params.buchstabe) ? params.buchstabe[0] : params.buchstabe

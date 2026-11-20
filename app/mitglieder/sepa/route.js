@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic"
 
 export async function GET(request) {
   const user = await getUser()
-  if (!canReadMembers(user)) return Response.redirect(new URL("/mitglieder", request.url))
+  if (!canReadMembers(user)) return Response.redirect(new URL("/statistik", request.url))
   const year = currentYear()
   const csv = encodeWindows1252(membersToSepaCsv(await listMemberRecords(), year))
   return new Response(csv, {

@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { canReadMembers } from "../lib/access"
 import { getUser } from "../lib/auth"
 import { givenName } from "../lib/names"
 
@@ -20,7 +21,7 @@ export default async function SectionTabs({ active }) {
         </p>
       ) : null}
       <ul className="nav nav-tabs mb-3">
-        {tabs.map((tab) => (
+        {tabs.filter((tab) => tab.id !== "mitglieder" || canReadMembers(user)).map((tab) => (
           <li className="nav-item" key={tab.id}>
             <Link
               className={`nav-link${active === tab.id ? " active" : ""}`}
