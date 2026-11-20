@@ -3,8 +3,8 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { usePathname, useRouter } from "next/navigation"
-import { lookupBank, lookupMemberEmail, lookupMemberName, submitJoin } from "../app/actions"
-import { germanIbanParts, validGermanIban } from "../lib/iban.mjs"
+import { lookupBank, lookupMemberEmail, lookupMemberIban, lookupMemberName, submitJoin } from "../app/actions"
+import { cleanIban, germanIbanParts, validGermanIban } from "../lib/iban.mjs"
 import { parseEuroToCents } from "../lib/money"
 import { validEmail } from "../lib/patterns.mjs"
 
@@ -19,6 +19,7 @@ const messages = {
   rate: "Es wurden zu viele Anfragen gesendet. Bitte versuche es später erneut.",
   name: "Ein Mitglied mit diesem Vor- und Nachnamen ist bereits eingetragen. Die Angaben können nicht gesendet werden.",
   emailused: "Diese E-Mail-Adresse ist bereits bei einem Mitglied hinterlegt. Die Angaben können nicht gesendet werden.",
+  ibanused: "Diese IBAN ist bereits bei einem Mitglied hinterlegt. Die Angaben können nicht gesendet werden.",
 }
 
 function SubmitButton({ ready }) {
@@ -62,6 +63,7 @@ export default function JoinForm({ ticket }) {
   const lookupSeq = useRef(0)
   const nameSeq = useRef(0)
   const emailSeq = useRef(0)
+  const ibanSeq = useRef(0)
   const [ready, setReady] = useState(false)
   const [message, setMessage] = useState("")
   const [emailInvalid, setEmailInvalid] = useState(false)
@@ -74,6 +76,8 @@ export default function JoinForm({ ticket }) {
   const [nameLooking, setNameLooking] = useState(false)
   const [emailState, setEmailState] = useState({ key: "", taken: false })
   const [emailLooking, setEmailLooking] = useState(false)
+  const [ibanState, setIbanState] = useState({ key: "", taken: false })
+  const [ibanLooking, setIbanLooking] = useState(false)
   const [email, setEmail] = useState("")
   const [amount, setAmount] = useState("")
   const [iban, setIban] = useState("")
@@ -96,6 +100,9 @@ export default function JoinForm({ ticket }) {
   const currentEmailKey = emailKey(email)
   const emailTaken = emailState.taken && emailState.key === currentEmailKey
   const emailPending = Boolean(currentEmailKey) && (emailLooking || emailState.key !== currentEmailKey)
+  const currentIbanKey = ibanKey(iban)
+  const ibanTaken = ibanState.taken && ibanState.key === currentIbanKey
+  const ibanPending = Boolean(currentIbanKey) && (ibanLooking || ibanState.key !== currentIbanKey)
   const complete = givenName.trim() !== ""
     && familyName.trim() !== ""
     && validEmail(email)
@@ -108,6 +115,8 @@ export default function JoinForm({ ticket }) {
     && !namePending
     && !emailTaken
     && !emailPending
+    && !ibanTaken
+    && !ibanPending
 
   function nameKey(given, family) {
     const left = String(given ?? "").trim().replace(/\s+/g, " ").toLocaleLowerCase("de")
@@ -164,6 +173,33 @@ export default function JoinForm({ ticket }) {
     }
   }
 
+  function ibanKey(value) {
+    const next = cleanIban(value)
+    if (!validGermanIban(next)) return ""
+    return next
+  }
+
+  async function reviewIban(value) {
+    const key = ibanKey(value)
+    if (!key) {
+      setIbanState({ key: "", taken: false })
+      setIbanLooking(false)
+      return
+    }
+    const seq = ++ibanSeq.current
+    setIbanLooking(true)
+    try {
+      const taken = await lookupMemberIban(value)
+      if (seq !== ibanSeq.current) return
+      setIbanState({ key, taken: taken === true })
+    } catch {
+      if (seq !== ibanSeq.current) return
+      setIbanState({ key, taken: false })
+    } finally {
+      if (seq === ibanSeq.current) setIbanLooking(false)
+    }
+  }
+
   async function resolveBank(value) {
     const seq = ++lookupSeq.current
     const parts = germanIbanParts(value)
@@ -210,10 +246,11 @@ export default function JoinForm({ ticket }) {
   }
 
   function guard(event) {
-    if (nameTaken || namePending || emailTaken || emailPending) {
+    if (nameTaken || namePending || emailTaken || emailPending || ibanTaken || ibanPending) {
       event.preventDefault()
       if (nameTaken) setMessage(messages.name)
       else if (emailTaken) setMessage(messages.emailused)
+      else if (ibanTaken) setMessage(messages.ibanused)
       return
     }
     const problem = checkFields(new FormData(event.currentTarget))
@@ -232,6 +269,10 @@ export default function JoinForm({ ticket }) {
       setMessage(messages.emailused)
       return
     }
+    if (ibanTaken) {
+      setMessage(messages.ibanused)
+      return
+    }
     const problem = checkFields(formData)
     if (problem) {
       setMessage(problem)
@@ -248,6 +289,7 @@ export default function JoinForm({ ticket }) {
     if (result?.error === "bank") setBankMissing(true)
     if (result?.error === "name") setNameState({ key: nameKey(givenName, familyName), taken: true })
     if (result?.error === "emailused") setEmailState({ key: emailKey(email), taken: true })
+    if (result?.error === "ibanused") setIbanState({ key: ibanKey(iban), taken: true })
     setMessage(messages[result?.error] ?? messages.angaben)
   }
 
@@ -428,28 +470,37 @@ export default function JoinForm({ ticket }) {
             </div>
             <input
               id={`${titleId}-iban`}
-              className={`form-control${ibanInvalid ? " is-invalid" : ""}`}
+              className={`form-control${ibanInvalid || ibanTaken ? " is-invalid" : ""}`}
               name="iban"
               required
               maxLength={42}
               autoComplete="off"
               autoCapitalize="characters"
               spellCheck={false}
-              aria-invalid={ibanInvalid}
-              aria-describedby={`${titleId}-iban-hint`}
+              aria-invalid={ibanInvalid || ibanTaken}
+              aria-describedby={ibanTaken ? `${titleId}-iban-taken` : `${titleId}-iban-hint`}
               value={iban}
               onChange={(event) => {
                 const next = event.target.value
                 setIban(next)
                 setIbanInvalid(false)
+                setIbanState({ key: "", taken: false })
                 resolveBank(next)
               }}
-              onBlur={(event) => setIbanInvalid(event.target.value.trim() !== "" && !validGermanIban(event.target.value))}
+              onBlur={(event) => {
+                setIbanInvalid(event.target.value.trim() !== "" && !validGermanIban(event.target.value))
+                reviewIban(event.target.value)
+              }}
             />
             <div className="form-text" id={`${titleId}-iban-hint`}>
               Bitte Zeichen für Zeichen mit der Bankkarte vergleichen. Eine deutsche IBAN beginnt mit DE und hat danach 20 Ziffern.
             </div>
             {ibanInvalid ? <div className="invalid-feedback d-block">{messages.iban}</div> : null}
+            {ibanTaken ? (
+              <div className="alert alert-warning mt-2 mb-0" id={`${titleId}-iban-taken`} role="alert">
+                {messages.ibanused}
+              </div>
+            ) : null}
           </div>
           <div className="col-12 col-md-6">
             <div className="d-flex align-items-center gap-2 mb-1 join-field-label">
