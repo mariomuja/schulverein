@@ -1,5 +1,5 @@
 import { canReadMembers } from "../../../lib/access"
-import { getUser } from "../../../lib/auth"
+import { boardUser } from "../../../lib/auth"
 import { encodeWindows1252, membersToSepaCsv } from "../../../lib/csv"
 import { listMemberRecords } from "../../../lib/members"
 import { currentYear } from "../../../lib/membership-stats"
@@ -7,7 +7,7 @@ import { currentYear } from "../../../lib/membership-stats"
 export const dynamic = "force-dynamic"
 
 export async function GET(request) {
-  const user = await getUser()
+  const user = await boardUser()
   if (!canReadMembers(user)) return Response.redirect(new URL("/statistik", request.url))
   const year = currentYear()
   const csv = encodeWindows1252(membersToSepaCsv(await listMemberRecords(), year))

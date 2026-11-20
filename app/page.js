@@ -1,5 +1,5 @@
 import Board from "../components/Board"
-import { getUser } from "../lib/auth"
+import { boardUser } from "../lib/auth"
 import { loadBoard } from "../lib/board"
 import { cleanFilter } from "../lib/list-query"
 
@@ -12,7 +12,7 @@ export default async function Page({ searchParams }) {
   const filter = cleanFilter(Array.isArray(params.filter) ? params.filter[0] : params.filter)
   const edit = Number(Array.isArray(params.edit) ? params.edit[0] : params.edit)
   const editId = Number.isInteger(edit) && edit > 0 ? edit : null
-  const user = await getUser()
+  const user = await boardUser()
 
   if (!user) {
     return (

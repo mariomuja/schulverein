@@ -13,7 +13,10 @@ export async function GET(request, context) {
     return NextResponse.redirect(home)
   }
 
-  const found = await query(`SELECT id FROM users WHERE login_token = $1`, [hashSecret(token)])
+  const found = await query(
+    `SELECT id, join_link FROM users WHERE login_token = $1`,
+    [hashSecret(token)],
+  )
   const user = found.rows[0]
   if (!user) return NextResponse.redirect(home)
 
@@ -33,7 +36,7 @@ export async function GET(request, context) {
     [hashSecret(sessionId), user.id, sessionDays],
   )
 
-  const response = NextResponse.redirect(home)
+  const response = NextResponse.redirect(user.join_link ? new URL("/beitritt", request.url) : home)
   response.headers.set("Cache-Control", "no-store")
   response.headers.set("Referrer-Policy", "no-referrer")
   response.cookies.set("sv_session", sessionId, {
@@ -44,7 +47,8 @@ export async function GET(request, context) {
     maxAge: 60 * 60 * 24 * sessionDays,
   })
   const loginCount = Number(counted.rows[0]?.login_count)
-  const showTokenHint = counted.rows[0]?.token_hint_pending === true || loginCount % 10 === 0
+  const showTokenHint =
+    !user.join_link && (counted.rows[0]?.token_hint_pending === true || loginCount % 10 === 0)
   if (showTokenHint) {
     response.cookies.set("sv_token_hint", "1", {
       httpOnly: false,

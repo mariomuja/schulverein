@@ -13,9 +13,16 @@ import { givenName, hasGivenAndFamilyName } from "../lib/names"
 import { archivePeriod } from "../lib/archive"
 import { appendLog, sealApplication } from "../lib/seal"
 import { acceptReceipt, maxReceipts } from "../lib/receipts"
-import { canAdministerUsers, canEditMembers, ensureAccess } from "../lib/access"
+import { canAdministerUsers, canEditMembers, ensureAccess, isJoinAccount } from "../lib/access"
 import { getMember, insertMember, markMemberDeleted, memberFromFields, preserveBankData, restoreMember as restoreMemberRecord, updateMember as replaceMember } from "../lib/members"
+import { confirmJoinRequest, submitJoinRequest } from "../lib/join"
 import { hashSecret } from "../lib/secret"
+
+async function boardActor() {
+  const user = await getUser()
+  if (isJoinAccount(user)) redirect("/beitritt")
+  return user
+}
 
 function applicationId(formData) {
   const id = Number(formData.get("applicationId"))
@@ -24,7 +31,7 @@ function applicationId(formData) {
 }
 
 export async function saveAuditDate(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   if (!user?.can_write) redirect("/?hinweis=recht")
 
   const date = String(formData.get("lastAuditDate") ?? "").trim()
@@ -51,7 +58,7 @@ export async function saveAuditDate(formData) {
 }
 
 export async function addApplication(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   if (!user?.can_write) redirect("/?hinweis=recht")
 
   const applicationDate = String(formData.get("applicationDate") ?? "").trim()
@@ -104,7 +111,7 @@ export async function addApplication(formData) {
 }
 
 export async function removeApplication(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   if (!user?.can_write) redirect("/?hinweis=recht")
 
   const id = applicationId(formData)
@@ -133,7 +140,7 @@ export async function removeApplication(formData) {
 }
 
 export async function updateApplication(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   if (!user?.can_write) redirect(boardHref({ hinweis: "recht" }))
 
   const id = applicationId(formData)
@@ -189,7 +196,7 @@ export async function updateApplication(formData) {
 }
 
 export async function addReceipts(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   if (!user?.can_write) redirect("/?hinweis=recht")
 
   const id = applicationId(formData)
@@ -239,7 +246,7 @@ export async function addReceipts(formData) {
 }
 
 export async function removeReceipt(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   if (!user?.can_write) redirect("/?hinweis=recht")
 
   const id = Number(formData.get("fileId"))
@@ -270,7 +277,7 @@ export async function removeReceipt(formData) {
 }
 
 export async function castVote(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   if (!user?.can_write) redirect("/?hinweis=recht")
 
   const id = applicationId(formData)
@@ -321,7 +328,7 @@ function cleanName(value) {
 }
 
 export async function addUser(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   if (!canAdministerUsers(user)) redirect("/?hinweis=recht")
 
   const name = givenName(cleanName(formData.get("name")))
@@ -371,11 +378,14 @@ function userId(formData) {
 }
 
 export async function deactivateUserToken(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   if (!canAdministerUsers(user)) redirect("/?hinweis=recht")
 
   const id = userId(formData)
   if (!id) redirect("/?hinweis=benutzer")
+  const target = await query(`SELECT join_link FROM users WHERE id = $1`, [id])
+  if (!target.rows[0]) redirect("/?hinweis=benutzer")
+  if (target.rows[0].join_link) redirect("/?hinweis=recht")
 
   const updated = await withTransaction(async (q) => {
     const result = await q(
@@ -402,11 +412,14 @@ export async function deactivateUserToken(formData) {
 }
 
 export async function renewUserToken(formData) {
-  const actor = await getUser()
+  const actor = await boardActor()
   if (!actor) redirect("/")
   const id = userId(formData)
   if (!id) redirect("/?hinweis=benutzer")
   if (!canAdministerUsers(actor) && id !== actor.id) redirect("/?hinweis=recht")
+  const target = await query(`SELECT join_link FROM users WHERE id = $1`, [id])
+  if (!target.rows[0]) redirect("/?hinweis=benutzer")
+  if (target.rows[0].join_link && !canAdministerUsers(actor)) redirect("/?hinweis=recht")
   const user = actor
 
   const token = randomBytes(32).toString("base64url")
@@ -416,7 +429,7 @@ export async function renewUserToken(formData) {
       `UPDATE users
        SET login_token = $2
        WHERE id = $1
-       RETURNING name`,
+       RETURNING name, join_link`,
       [id, hashSecret(token)],
     )
     if (result.rowCount === 0) return result
@@ -433,18 +446,23 @@ export async function renewUserToken(formData) {
     redirect(exists.rows[0] ? "/?hinweis=recht" : "/?hinweis=benutzer")
   }
   revalidatePath("/")
-  return { id, name: updated.rows[0].name, loginUrl: `${await requestOrigin()}/${token}` }
+  return {
+    id,
+    name: updated.rows[0].name,
+    joinLink: updated.rows[0].join_link === true,
+    loginUrl: `${await requestOrigin()}/${token}`,
+  }
 }
 
 export async function removeUser(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   if (!canAdministerUsers(user)) redirect("/?hinweis=recht")
 
   const id = Number(formData.get("userId"))
   if (!Number.isInteger(id) || id <= 0) redirect("/?hinweis=benutzer")
 
   const found = await query(
-    `SELECT (
+    `SELECT join_link, (
         EXISTS (SELECT 1 FROM votes WHERE user_id = $1)
         OR EXISTS (SELECT 1 FROM vote_record_ballots WHERE user_id = $1)
       ) AS has_voted
@@ -453,6 +471,7 @@ export async function removeUser(formData) {
     [id],
   )
   if (!found.rows[0]) redirect("/?hinweis=benutzer")
+  if (found.rows[0].join_link) redirect("/?hinweis=recht")
   if (found.rows[0].has_voted) redirect("/?hinweis=stimme")
 
   let removed
@@ -462,6 +481,7 @@ export async function removeUser(formData) {
       const result = await q(
         `DELETE FROM users
          WHERE id = $1
+           AND join_link = FALSE
            AND NOT EXISTS (SELECT 1 FROM votes WHERE user_id = $1)
            AND NOT EXISTS (SELECT 1 FROM vote_record_ballots WHERE user_id = $1)
            AND NOT EXISTS (SELECT 1 FROM vote_records WHERE closed_by_user_id = $1)
@@ -488,12 +508,14 @@ function limited(value, max) {
 }
 
 export async function updateUserAccess(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   if (!canAdministerUsers(user)) redirect("/?hinweis=recht")
   const id = userId(formData)
   const applicationsWrite = formData.get("applicationsAccess") === "write"
   const membersAccess = String(formData.get("membersAccess") ?? "none")
   if (!id || !["none", "read", "write"].includes(membersAccess)) redirect("/?hinweis=benutzer")
+  const target = await query(`SELECT join_link FROM users WHERE id = $1`, [id])
+  if (!target.rows[0] || target.rows[0].join_link) redirect("/?hinweis=recht")
   await ensureAccess()
   const updated = await query(
     `UPDATE users SET can_write = $2, members_access = $3 WHERE id = $1 RETURNING name`,
@@ -537,7 +559,7 @@ function memberFields(formData) {
 }
 
 export async function saveMember(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   const letter = String(formData.get("letter") ?? "")
   if (!canEditMembers(user)) redirect("/mitglieder")
   const data = memberFields(formData)
@@ -553,7 +575,7 @@ export async function saveMember(formData) {
 }
 
 export async function updateMember(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   const letter = String(formData.get("letter") ?? "")
   const id = Number(formData.get("memberId"))
   if (!canEditMembers(user) || !Number.isInteger(id) || id <= 0) redirect("/mitglieder")
@@ -573,7 +595,7 @@ export async function updateMember(formData) {
 }
 
 export async function deleteMember(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   const letter = String(formData.get("letter") ?? "")
   const id = Number(formData.get("memberId"))
   if (!canEditMembers(user) || !Number.isInteger(id) || id <= 0) redirect("/mitglieder")
@@ -584,7 +606,7 @@ export async function deleteMember(formData) {
 }
 
 export async function restoreMember(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   const letter = String(formData.get("letter") ?? "")
   const id = Number(formData.get("memberId"))
   if (!canEditMembers(user) || !Number.isInteger(id) || id <= 0) redirect("/mitglieder")
@@ -611,7 +633,7 @@ export async function logout() {
 }
 
 export async function setVotingClosed(formData) {
-  const user = await getUser()
+  const user = await boardActor()
   if (!user?.is_treasurer) redirect("/?hinweis=schatzmeister")
 
   const id = applicationId(formData)
@@ -622,4 +644,33 @@ export async function setVotingClosed(formData) {
   const result = await withTransaction((q) => sealApplication(q, id, user))
   if (result.error) redirect(`/?hinweis=${result.error}`)
   revalidatePath("/")
+}
+
+export async function submitJoin(formData) {
+  const user = await getUser()
+  if (!isJoinAccount(user)) redirect("/")
+  const result = await submitJoinRequest(user, formData)
+  if (result?.ok) return { ok: true }
+  return result
+}
+
+export async function confirmJoin(formData) {
+  const token = String(formData.get("token") ?? "")
+  const result = await confirmJoinRequest(token, String(formData.get("mandateHash") ?? ""))
+  if (result?.ok) {
+    const jar = await cookies()
+    jar.set("sv_join_done", "1", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 600,
+    })
+    revalidatePath("/mitglieder")
+    revalidatePath("/statistik")
+    redirect("/beitritt/bestaetigt")
+  }
+  if (!/^[A-Za-z0-9_-]{20,128}$/.test(token)) redirect("/beitritt/bestaetigt")
+  const notice = result?.error === "neu" ? "neu" : "ungueltig"
+  redirect(`/beitritt/bestaetigen/${token}?hinweis=${notice}`)
 }

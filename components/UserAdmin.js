@@ -207,6 +207,11 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
                         <span className="fw-semibold">Rechte:</span> für Förderanträge Leserecht oder
                         Schreibrecht, für Mitglieder kein Zugang, Leserecht oder Schreibrecht.
                       </li>
+                      <li>
+                        <span className="fw-semibold">Neues Mitglied:</span> das ist der Beitrittslink
+                        für neue Mitglieder. Dieser Nutzer kann nicht entfernt und nicht verändert
+                        werden. Neues Token erzeugt den Link, der an die Klassen verteilt wird.
+                      </li>
                     </ul>
                   </div>
                   ) : (
@@ -222,20 +227,29 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
                   <ul className="list-group list-group-flush mb-3">
                     {accounts.map((account) => (
                       <li className="list-group-item px-0" key={account.id}>
-                        <div className="fw-semibold">{givenName(account.name)}</div>
+                        <div className="fw-semibold">{account.joinLink ? account.name : givenName(account.name)}</div>
                         <div className="small text-secondary mb-2">
-                          {account.roleLabel ? `${account.roleLabel} · ` : ""}
-                          {account.canWrite ? "Schreibrecht" : "Leserecht"}
-                          {!account.tokenActive ? " · Token deaktiviert" : ""}
+                          {account.joinLink ? (
+                            <>
+                              Beitrittslink für neue Mitglieder. Name und Rechte bleiben fest.
+                              {account.tokenActive ? "" : " Noch kein Token."}
+                            </>
+                          ) : (
+                            <>
+                              {account.roleLabel ? `${account.roleLabel} · ` : ""}
+                              {account.canWrite ? "Schreibrecht" : "Leserecht"}
+                              {!account.tokenActive ? " · Token deaktiviert" : ""}
+                            </>
+                          )}
                         </div>
-                        {canAdminister ? (
+                        {canAdminister && !account.joinLink ? (
                           <AccessForm
                             key={`${account.id}-${account.canWrite ? "write" : "read"}-${account.membersAccess ?? "none"}`}
                             account={account}
                           />
                         ) : null}
                         <div className="d-flex flex-wrap gap-2">
-                          {canAdminister && account.canWrite && account.tokenActive ? (
+                          {canAdminister && !account.joinLink && account.canWrite && account.tokenActive ? (
                             <form
                               action={async (formData) => {
                                 await deactivateUserToken(formData)
@@ -263,7 +277,7 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
                               </button>
                             </form>
                           ) : null}
-                          {canAdminister && account.canWrite ? (
+                          {canAdminister && !account.joinLink && account.canWrite ? (
                             account.hasVoted ? (
                               <span className="small text-secondary align-self-center">
                                 Hat bereits abgestimmt
@@ -376,7 +390,9 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
                     </div>
                     <div className="modal-body">
                       <p className="mb-2">
-                        Anmeldelink für {givenName(issued.name)}. Er wird nur dieses eine Mal angezeigt.
+                        {issued.joinLink
+                          ? "Beitrittslink für neue Mitglieder. Er wird nur dieses eine Mal angezeigt."
+                          : `Anmeldelink für ${givenName(issued.name)}. Er wird nur dieses eine Mal angezeigt.`}
                       </p>
                       <p className="font-monospace small text-break mb-0">{issued.loginUrl}</p>
                     </div>

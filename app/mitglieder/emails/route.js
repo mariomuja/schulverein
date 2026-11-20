@@ -1,11 +1,11 @@
 import { canReadMembers } from "../../../lib/access"
-import { getUser } from "../../../lib/auth"
+import { boardUser } from "../../../lib/auth"
 import { listMemberRecords, splitEmails } from "../../../lib/members"
 
 export const dynamic = "force-dynamic"
 
 export async function GET(request) {
-  const user = await getUser()
+  const user = await boardUser()
   if (!canReadMembers(user)) return Response.redirect(new URL("/statistik", request.url))
   const records = await listMemberRecords()
   const emails = [...new Set(records.flatMap((member) => splitEmails(member.email)))]

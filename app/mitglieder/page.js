@@ -2,8 +2,9 @@ import { redirect } from "next/navigation"
 import MemberForm from "../../components/MemberForm"
 import MembersList from "../../components/MembersList"
 import SectionTabs from "../../components/SectionTabs"
+import SepaDownload from "../../components/SepaDownload"
 import { canEditMembers, canReadMembers } from "../../lib/access"
-import { getUser } from "../../lib/auth"
+import { boardUser } from "../../lib/auth"
 import { familyLetter, getMember, listDeletedMembers, listMembers, withoutBankData } from "../../lib/members"
 
 export const dynamic = "force-dynamic"
@@ -47,7 +48,7 @@ function usedMemberFields(members) {
 }
 
 export default async function MembersPage({ searchParams }) {
-  const user = await getUser()
+  const user = await boardUser()
   if (!user) redirect("/")
   const editor = canEditMembers(user)
   const reader = canReadMembers(user)
@@ -89,10 +90,7 @@ export default async function MembersPage({ searchParams }) {
                 <i className="bi bi-download" aria-hidden="true" />
                 eMails
               </a>
-              <a className="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" href="/mitglieder/sepa">
-                <i className="bi bi-download" aria-hidden="true" />
-                SEPA
-              </a>
+              <SepaDownload />
             </>
           ) : null}
         </div>

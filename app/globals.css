@@ -714,3 +714,11 @@ body.is-resizing-columns * {
     font-size: 1.22rem;
   }
 }
+
+.join-honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}

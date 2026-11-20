@@ -1,4 +1,4 @@
-import { getUser } from "../../../lib/auth"
+import { boardUser } from "../../../lib/auth"
 import { query } from "../../../lib/db"
 import { receiptDisposition } from "../../../lib/receipts"
 
@@ -15,7 +15,7 @@ const servedTypes = new Set([
 ])
 
 export async function GET(request, context) {
-  const user = await getUser()
+  const user = await boardUser()
   if (!user) return Response.redirect(new URL("/", request.url))
 
   const id = Number((await context.params).id)

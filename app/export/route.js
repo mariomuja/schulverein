@@ -1,11 +1,11 @@
-import { getUser } from "../../lib/auth"
+import { boardUser } from "../../lib/auth"
 import { loadBoard } from "../../lib/board"
 import { applicationsToCsv } from "../../lib/csv"
 
 export const dynamic = "force-dynamic"
 
 export async function GET(request) {
-  const user = await getUser()
+  const user = await boardUser()
   if (!user) {
     return Response.redirect(new URL("/", request.url))
   }

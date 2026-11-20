@@ -1,11 +1,11 @@
 import { archiveId, dayBefore, loadArchive } from "../../../../../lib/archive"
-import { getUser } from "../../../../../lib/auth"
+import { boardUser } from "../../../../../lib/auth"
 import { applicationsToCsv } from "../../../../../lib/csv"
 
 export const dynamic = "force-dynamic"
 
 export async function GET(request, context) {
-  const user = await getUser()
+  const user = await boardUser()
   if (!user) return Response.redirect(new URL("/", request.url))
 
   const { id } = await context.params

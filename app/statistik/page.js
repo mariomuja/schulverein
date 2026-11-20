@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import MembershipCharts from "../../components/MembershipCharts"
 import SectionTabs from "../../components/SectionTabs"
-import { getUser } from "../../lib/auth"
+import { boardUser } from "../../lib/auth"
 import { listMembershipEvents } from "../../lib/members"
 import { membershipStats } from "../../lib/membership-stats"
 
@@ -12,7 +12,7 @@ export const metadata = {
 }
 
 export default async function StatisticsPage() {
-  const user = await getUser()
+  const user = await boardUser()
   if (!user) redirect("/")
   const stats = membershipStats(await listMembershipEvents())
 
