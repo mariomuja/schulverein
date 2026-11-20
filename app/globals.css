@@ -10,22 +10,28 @@ body {
 }
 
 .member-table {
-  --bs-table-hover-bg: #e7f1ff;
+  --bs-table-hover-bg: #f4f9ff;
 }
 
 .member-row {
   cursor: pointer;
 }
 
-.member-row:focus-visible {
-  outline: 2px solid #0d6efd;
-  outline-offset: -2px;
+.member-table.table-hover > tbody > tr.member-row:hover > *,
+.member-table.table-hover > tbody > tr.member-row:focus-visible > * {
+  --bs-table-bg-type: transparent;
+  --bs-table-bg-state: transparent;
+  background-color: #f4f9ff;
+  box-shadow: none;
 }
 
+.member-table tbody tr.member-row:hover,
+.member-table tbody tr.member-row:focus-visible,
 .card.member-row:hover,
 .card.member-row:focus-visible {
-  background-color: #e7f1ff;
-  border-color: #9ec5fe;
+  outline: 2px solid #0a3d7a;
+  outline-offset: -2px;
+  background-color: #f4f9ff;
 }
 
 .logo {
