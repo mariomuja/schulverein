@@ -74,11 +74,8 @@ export default function MembersList({ members, letter }) {
                       <dd className="col-7 text-break">{member.email || "—"}</dd>
                       <dt className="col-5">Beitrag</dt>
                       <dd className="col-7">{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</dd>
-                      <dt className="col-5">Bank</dt>
-                      <dd className="col-7 mb-0">
-                        {member.bankName || "—"}
-                        {member.accountHolder ? <div className="text-secondary">{member.accountHolder}</div> : null}
-                      </dd>
+                      <dt className="col-5">BIC</dt>
+                      <dd className="col-7 mb-0">{member.bicStored ? "••••" : "—"}</dd>
                     </dl>
                   </div>
                 </article>
@@ -96,7 +93,7 @@ export default function MembersList({ members, letter }) {
               <th>Adresse</th>
               <th>E-Mail</th>
               <th>Beitrag</th>
-              <th>Bank</th>
+              <th>BIC</th>
             </tr>
           </thead>
           <tbody>
@@ -125,10 +122,7 @@ export default function MembersList({ members, letter }) {
                   <td>{address(member) || "—"}</td>
                   <td className="text-break">{member.email || "—"}</td>
                   <td>{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</td>
-                  <td>
-                    <div>{member.bankName || "—"}</div>
-                    <div className="small text-secondary">{member.accountHolder}</div>
-                  </td>
+                  <td>{member.bicStored ? "••••" : "—"}</td>
                 </tr>
               )
             })}
