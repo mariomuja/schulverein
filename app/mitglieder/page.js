@@ -4,7 +4,7 @@ import MembersList from "../../components/MembersList"
 import SectionTabs from "../../components/SectionTabs"
 import { canEditMembers, canReadMembers } from "../../lib/access"
 import { getUser } from "../../lib/auth"
-import { countMembers, familyLetter, getMember, listMembers, withoutBankData } from "../../lib/members"
+import { countMembers, familyLetter, getMember, listDeletedMembers, listMembers, withoutBankData } from "../../lib/members"
 
 export const dynamic = "force-dynamic"
 
@@ -44,9 +44,11 @@ export default async function MembersPage({ searchParams }) {
   const count = await countMembers()
 
   let members = []
+  let deletedMembers = []
   let editing = null
   if (editor) {
     members = await listMembers()
+    deletedMembers = await listDeletedMembers()
     const editId = Number(Array.isArray(params.bearbeiten) ? params.bearbeiten[0] : params.bearbeiten)
     if (Number.isInteger(editId) && editId > 0) editing = withoutBankData(await getMember(editId))
   }
@@ -106,7 +108,7 @@ export default async function MembersPage({ searchParams }) {
               )
             ))}
           </nav>
-          <MembersList members={shown} letter={letter} />
+          <MembersList members={shown} deletedMembers={deletedMembers} letter={letter} />
           {editing ? <MemberForm key={editing.id} member={editing} letter={letter} /> : null}
         </>
       ) : (

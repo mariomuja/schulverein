@@ -4,7 +4,16 @@ import { roleFromDatabaseUrl } from "./archive-schema.mjs"
 
 for (const line of fs.readFileSync(".env.local", "utf8").split(/\r?\n/)) {
   const match = line.match(/^([A-Z0-9_]+)=(.*)$/)
-  if (match && process.env[match[1]] == null) process.env[match[1]] = match[2]
+    if (match && process.env[match[1]] == null) {
+      let value = match[2]
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1)
+      }
+      process.env[match[1]] = value
+    }
 }
 
 if (!process.env.DATABASE_URL_OWNER) {
@@ -45,6 +54,7 @@ await db.query(`
     created_by INTEGER REFERENCES users(id)
   )
 `)
+await db.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`)
 
 const appRole = roleFromDatabaseUrl(process.env.DATABASE_URL)
 if (appRole && /^[A-Za-z_][A-Za-z0-9_]*$/.test(appRole)) {

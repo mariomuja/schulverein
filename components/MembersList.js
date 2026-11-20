@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
-import { deleteMember } from "../app/actions"
+import { deleteMember, restoreMember } from "../app/actions"
 import { formatEuro } from "../lib/money"
 
 const columns = [
@@ -137,7 +137,12 @@ function headerFloor(header) {
   return Math.max(minColumn, Math.ceil(widest + extra + 18))
 }
 
-export default function MembersList({ members, letter }) {
+function deletedLabel(member) {
+  if (member.unreadable) return "Nicht lesbar"
+  return [member.familyName, member.givenName].filter(Boolean).join(", ") || "Ohne Namen"
+}
+
+export default function MembersList({ members, deletedMembers = [], letter }) {
   const router = useRouter()
   const wrapRef = useRef(null)
   const tableRef = useRef(null)
@@ -148,6 +153,8 @@ export default function MembersList({ members, letter }) {
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
+  const [selectedDeleted, setSelectedDeleted] = useState("")
+  const [pendingRestore, setPendingRestore] = useState(null)
 
   const rows = useMemo(() => {
     const tokens = fold(query).split(/\s+/).filter(Boolean)
@@ -203,14 +210,19 @@ export default function MembersList({ members, letter }) {
   }, [rows])
 
   useEffect(() => {
-    if (!pendingDelete) return undefined
+    if (!pendingDelete && !pendingRestore) return undefined
     confirmRef.current?.focus()
     function onKeyDown(event) {
-      if (event.key === "Escape") setPendingDelete(null)
+      if (event.key === "Escape") {
+        setPendingDelete(null)
+        setPendingRestore(null)
+      }
     }
     document.addEventListener("keydown", onKeyDown)
     return () => document.removeEventListener("keydown", onKeyDown)
-  }, [pendingDelete])
+  }, [pendingDelete, pendingRestore])
+
+  const chosenDeleted = deletedMembers.find((member) => String(member.id) === selectedDeleted) ?? null
 
   function toggleSort(key) {
     setSort((current) => {
@@ -310,6 +322,37 @@ export default function MembersList({ members, letter }) {
           placeholder="Suchen"
           autoComplete="off"
         />
+      </div>
+      <div className="row g-2 align-items-end mb-3">
+        <div className="col-12 col-md-6 col-xl-4">
+          <label className="form-label small mb-1" htmlFor="deleted-members">
+            Gelöschte Mitglieder
+          </label>
+          <select
+            id="deleted-members"
+            className="form-select form-select-sm"
+            value={deletedMembers.some((member) => String(member.id) === selectedDeleted) ? selectedDeleted : ""}
+            onChange={(event) => setSelectedDeleted(event.target.value)}
+            disabled={deletedMembers.length === 0}
+          >
+            <option value="">{deletedMembers.length === 0 ? "Keine gelöschten Mitglieder" : "Bitte wählen"}</option>
+            {deletedMembers.map((member) => (
+              <option key={member.id} value={member.id}>
+                {deletedLabel(member)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="col-12 col-md-auto">
+          <button
+            className="btn btn-outline-primary btn-sm"
+            type="button"
+            disabled={!chosenDeleted}
+            onClick={() => setPendingRestore(chosenDeleted)}
+          >
+            Löschen rückgängig
+          </button>
+        </div>
       </div>
       {rows.length === 0 ? (
         <p className="text-secondary mb-0">
@@ -482,8 +525,8 @@ export default function MembersList({ members, letter }) {
                     </div>
                     <div className="modal-body">
                       <p className="mb-0">
-                        {person(pendingDelete)} wirklich löschen? Das Mitglied wird entfernt und kann nicht
-                        wiederhergestellt werden.
+                        {person(pendingDelete)} wirklich löschen? Das Mitglied verschwindet aus der Liste und
+                        aus den Exporten.
                       </p>
                     </div>
                     <div className="modal-footer">
@@ -492,6 +535,56 @@ export default function MembersList({ members, letter }) {
                       </button>
                       <button className="btn btn-danger" type="submit">
                         Löschen
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
+      {pendingRestore
+        ? createPortal(
+            <>
+              <div className="modal-backdrop fade show member-delete-backdrop" onClick={() => setPendingRestore(null)} />
+              <div
+                className="modal fade show d-block member-delete-modal"
+                role="presentation"
+                onClick={() => setPendingRestore(null)}
+              >
+                <div
+                  ref={confirmRef}
+                  className="modal-dialog modal-dialog-centered"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby={confirmTitleId}
+                  tabIndex={-1}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <form action={restoreMember} className="modal-content">
+                    <input type="hidden" name="memberId" value={pendingRestore.id} />
+                    <input type="hidden" name="letter" value={letter} />
+                    <div className="modal-header">
+                      <h2 className="modal-title h5" id={confirmTitleId}>
+                        Löschen rückgängig
+                      </h2>
+                      <button
+                        className="btn-close"
+                        type="button"
+                        aria-label="Schließen"
+                        onClick={() => setPendingRestore(null)}
+                      />
+                    </div>
+                    <div className="modal-body">
+                      <p className="mb-0">{deletedLabel(pendingRestore)} wieder in die Liste aufnehmen?</p>
+                    </div>
+                    <div className="modal-footer">
+                      <button className="btn btn-outline-secondary" type="button" onClick={() => setPendingRestore(null)}>
+                        Abbrechen
+                      </button>
+                      <button className="btn btn-primary" type="submit">
+                        Löschen rückgängig
                       </button>
                     </div>
                   </form>

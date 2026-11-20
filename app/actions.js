@@ -14,7 +14,7 @@ import { archivePeriod } from "../lib/archive"
 import { appendLog, sealApplication } from "../lib/seal"
 import { acceptReceipt, maxReceipts } from "../lib/receipts"
 import { canAdministerUsers, canEditMembers, ensureAccess } from "../lib/access"
-import { deleteMember as removeMember, getMember, insertMember, memberFromFields, preserveBankData, updateMember as replaceMember } from "../lib/members"
+import { getMember, insertMember, markMemberDeleted, memberFromFields, preserveBankData, restoreMember as restoreMemberRecord, updateMember as replaceMember } from "../lib/members"
 import { hashSecret } from "../lib/secret"
 
 function applicationId(formData) {
@@ -577,7 +577,18 @@ export async function deleteMember(formData) {
   const letter = String(formData.get("letter") ?? "")
   const id = Number(formData.get("memberId"))
   if (!canEditMembers(user) || !Number.isInteger(id) || id <= 0) redirect("/mitglieder")
-  await removeMember(id)
+  await markMemberDeleted(id)
+  revalidatePath("/mitglieder")
+  revalidatePath("/statistik")
+  redirect(memberRedirect(letter))
+}
+
+export async function restoreMember(formData) {
+  const user = await getUser()
+  const letter = String(formData.get("letter") ?? "")
+  const id = Number(formData.get("memberId"))
+  if (!canEditMembers(user) || !Number.isInteger(id) || id <= 0) redirect("/mitglieder")
+  await restoreMemberRecord(id)
   revalidatePath("/mitglieder")
   revalidatePath("/statistik")
   redirect(memberRedirect(letter))
