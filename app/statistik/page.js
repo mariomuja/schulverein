@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import MembershipCharts from "../../components/MembershipCharts"
 import SectionTabs from "../../components/SectionTabs"
 import { getUser } from "../../lib/auth"
-import { listMemberRecords } from "../../lib/members"
+import { listMembershipEvents } from "../../lib/members"
 import { membershipStats } from "../../lib/membership-stats"
 
 export const dynamic = "force-dynamic"
@@ -14,19 +14,19 @@ export const metadata = {
 export default async function StatisticsPage() {
   const user = await getUser()
   if (!user) redirect("/")
-  const records = await listMemberRecords()
-  const stats = membershipStats(records.map((member) => member.joinedOn))
+  const stats = membershipStats(await listMembershipEvents())
 
   return (
     <>
       <SectionTabs active="statistik" />
       <div className="table-responsive mb-3">
         <table className="table table-sm table-striped bg-white mb-0">
-          <caption className="caption-top text-body">Neue Mitglieder nach Zeitraum</caption>
+          <caption className="caption-top text-body">Eintritte und Austritte nach Zeitraum</caption>
           <thead>
             <tr>
               <th>Zeitraum</th>
               <th>Eintritte</th>
+              <th>Austritte</th>
             </tr>
           </thead>
           <tbody>
@@ -34,6 +34,7 @@ export default async function StatisticsPage() {
               <tr key={period.label}>
                 <td>{period.label}</td>
                 <td>{period.added}</td>
+                <td>{period.left}</td>
               </tr>
             ))}
           </tbody>
@@ -41,11 +42,12 @@ export default async function StatisticsPage() {
       </div>
       <div className="table-responsive mb-4">
         <table className="table table-sm table-striped bg-white mb-2">
-          <caption className="caption-top text-body">Mitgliederentwicklung nach Eintrittsjahr</caption>
+          <caption className="caption-top text-body">Mitgliederentwicklung nach Jahr</caption>
           <thead>
             <tr>
               <th>Jahr</th>
               <th>Neue Mitglieder</th>
+              <th>Austritte</th>
               <th>Bestand zum Jahresende</th>
             </tr>
           </thead>
@@ -54,6 +56,7 @@ export default async function StatisticsPage() {
               <tr key={row.year}>
                 <td>{row.year}</td>
                 <td>{row.added}</td>
+                <td>{row.left}</td>
                 <td>{row.stock}</td>
               </tr>
             ))}
