@@ -43,6 +43,18 @@ if (!limited.rows[0]?.members_tab_limited) {
   )
   await db.query(`UPDATE settings SET members_tab_limited = TRUE WHERE id = 1`)
 }
+await db.query(
+  `ALTER TABLE settings ADD COLUMN IF NOT EXISTS members_demo_editors BOOLEAN NOT NULL DEFAULT FALSE`,
+)
+const editors = await db.query(`SELECT members_demo_editors FROM settings WHERE id = 1`)
+if (!editors.rows[0]?.members_demo_editors) {
+  await db.query(
+    `UPDATE users
+     SET members_access = 'write'
+     WHERE lower(btrim(name)) IN ('mario', 'mario muja', 'steffi')`,
+  )
+  await db.query(`UPDATE settings SET members_demo_editors = TRUE WHERE id = 1`)
+}
 
 await db.query(`
   CREATE TABLE IF NOT EXISTS members (
@@ -58,7 +70,7 @@ if (appRole && /^[A-Za-z_][A-Za-z0-9_]*$/.test(appRole)) {
   const role = `"${appRole}"`
   await db.query(`GRANT SELECT, UPDATE ON users TO ${role}`)
   await db.query(`GRANT SELECT, UPDATE ON settings TO ${role}`)
-  await db.query(`GRANT SELECT, INSERT ON members TO ${role}`)
+  await db.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON members TO ${role}`)
   await db.query(`GRANT USAGE, SELECT ON SEQUENCE members_id_seq TO ${role}`)
 }
 

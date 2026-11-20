@@ -1,28 +1,25 @@
 import Link from "next/link"
-import { canSeeMembers } from "../lib/access"
 
-export default function SectionTabs({ user, active }) {
-  if (!canSeeMembers(user)) return null
+const tabs = [
+  { id: "antraege", href: "/", label: "Förderanträge" },
+  { id: "mitglieder", href: "/mitglieder", label: "Mitglieder" },
+  { id: "statistik", href: "/statistik", label: "Statistik" },
+]
+
+export default function SectionTabs({ active }) {
   return (
     <ul className="nav nav-tabs mb-3">
-      <li className="nav-item">
-        <Link
-          className={`nav-link${active === "mitglieder" ? " active" : ""}`}
-          href="/mitglieder"
-          aria-current={active === "mitglieder" ? "page" : undefined}
-        >
-          Mitglieder
-        </Link>
-      </li>
-      <li className="nav-item">
-        <Link
-          className={`nav-link${active === "antraege" ? " active" : ""}`}
-          href="/"
-          aria-current={active === "antraege" ? "page" : undefined}
-        >
-          Förderanträge
-        </Link>
-      </li>
+      {tabs.map((tab) => (
+        <li className="nav-item" key={tab.id}>
+          <Link
+            className={`nav-link${active === tab.id ? " active" : ""}`}
+            href={tab.href}
+            aria-current={active === tab.id ? "page" : undefined}
+          >
+            {tab.label}
+          </Link>
+        </li>
+      ))}
     </ul>
   )
 }

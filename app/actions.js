@@ -13,8 +13,8 @@ import { givenName, hasGivenAndFamilyName } from "../lib/names"
 import { archivePeriod } from "../lib/archive"
 import { appendLog, sealApplication } from "../lib/seal"
 import { acceptReceipt, maxReceipts } from "../lib/receipts"
-import { canWriteMembers, ensureAccess } from "../lib/access"
-import { insertMember } from "../lib/members"
+import { canEditMembers, ensureAccess } from "../lib/access"
+import { deleteMember as removeMember, insertMember, memberFromFields, updateMember as replaceMember } from "../lib/members"
 import { hashSecret } from "../lib/secret"
 
 function applicationId(formData) {
@@ -496,12 +496,6 @@ function limited(value, max) {
   return String(value ?? "").trim().slice(0, max)
 }
 
-function cleanIban(value) {
-  return String(value ?? "")
-    .replace(/[^A-Za-z0-9]/g, "")
-    .toUpperCase()
-}
-
 export async function updateUserAccess(formData) {
   const user = await getUser()
   if (!user?.can_write) redirect("/?hinweis=recht")
@@ -528,49 +522,77 @@ export async function updateUserAccess(formData) {
   revalidatePath("/mitglieder")
 }
 
+function memberRedirect(letter, notice) {
+  const params = new URLSearchParams()
+  if (letter) params.set("buchstabe", letter)
+  if (notice) params.set("hinweis", notice)
+  const query = params.toString()
+  return query ? `/mitglieder?${query}` : "/mitglieder"
+}
+
+function memberFields(formData) {
+  return memberFromFields({
+    memberNumber: formData.get("memberNumber"),
+    familyName: formData.get("familyName"),
+    givenName: formData.get("givenName"),
+    street: formData.get("street"),
+    houseNumber: formData.get("houseNumber"),
+    postalCode: formData.get("postalCode"),
+    city: formData.get("city"),
+    email: formData.get("email"),
+    contribution: formData.get("contribution"),
+    joinedOn: formData.get("joinedOn"),
+    mandateId: formData.get("mandateId"),
+    bic: formData.get("bic"),
+    bankName: formData.get("bankName"),
+    iban: formData.get("iban"),
+    accountHolder: formData.get("accountHolder"),
+  })
+}
+
 export async function saveMember(formData) {
   const user = await getUser()
-  if (!canWriteMembers(user)) redirect("/")
-
-  const familyName = limited(formData.get("familyName"), 80)
-  const givenNameValue = limited(formData.get("givenName"), 80)
-  const choice = String(formData.get("contributionChoice") ?? "")
-  let contributionCents = null
-  if (choice === "22") contributionCents = 2200
-  else if (choice === "25") contributionCents = 2500
-  else if (choice === "custom") contributionCents = parseEuroToCents(formData.get("contributionCustom"))
-
-  const email = limited(formData.get("email"), 160)
-  const iban = cleanIban(formData.get("iban"))
-  if (
-    familyName.length < 1 ||
-    givenNameValue.length < 1 ||
-    contributionCents == null ||
-    (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) ||
-    (iban && !/^DE\d{20}$/.test(iban))
-  ) {
-    redirect("/mitglieder?hinweis=mitglied")
-  }
-
+  const letter = String(formData.get("letter") ?? "")
+  if (!canEditMembers(user)) redirect("/mitglieder")
+  const data = memberFields(formData)
+  if (!data) redirect(memberRedirect(letter, "mitglied"))
   try {
-    await insertMember(user.id, {
-      familyName,
-      givenName: givenNameValue,
-      street: limited(formData.get("street"), 120),
-      houseNumber: limited(formData.get("houseNumber"), 20),
-      postalCode: limited(formData.get("postalCode"), 10),
-      city: limited(formData.get("city"), 80),
-      email,
-      contributionCents,
-      bankName: limited(formData.get("bankName"), 120),
-      iban,
-      accountHolder: limited(formData.get("accountHolder"), 120),
-    })
+    await insertMember(user.id, data)
   } catch {
-    redirect("/mitglieder?hinweis=schluessel")
+    redirect(memberRedirect(letter, "schluessel"))
   }
   revalidatePath("/mitglieder")
-  redirect("/mitglieder")
+  revalidatePath("/statistik")
+  redirect(memberRedirect(letter))
+}
+
+export async function updateMember(formData) {
+  const user = await getUser()
+  const letter = String(formData.get("letter") ?? "")
+  const id = Number(formData.get("memberId"))
+  if (!canEditMembers(user) || !Number.isInteger(id) || id <= 0) redirect("/mitglieder")
+  const data = memberFields(formData)
+  if (!data) redirect(`${memberRedirect(letter, "mitglied")}&bearbeiten=${id}`)
+  try {
+    const saved = await replaceMember(id, data)
+    if (!saved) redirect(memberRedirect(letter, "mitglied"))
+  } catch {
+    redirect(memberRedirect(letter, "schluessel"))
+  }
+  revalidatePath("/mitglieder")
+  revalidatePath("/statistik")
+  redirect(memberRedirect(letter))
+}
+
+export async function deleteMember(formData) {
+  const user = await getUser()
+  const letter = String(formData.get("letter") ?? "")
+  const id = Number(formData.get("memberId"))
+  if (!canEditMembers(user) || !Number.isInteger(id) || id <= 0) redirect("/mitglieder")
+  await removeMember(id)
+  revalidatePath("/mitglieder")
+  revalidatePath("/statistik")
+  redirect(memberRedirect(letter))
 }
 
 export async function logout() {

@@ -1,4 +1,10 @@
+import Link from "next/link"
+import DeleteMemberButton from "./DeleteMemberButton"
 import { formatEuro } from "../lib/money"
+
+function memberHref(letter) {
+  return letter ? `/mitglieder?buchstabe=${letter}` : "/mitglieder"
+}
 
 function address(member) {
   const street = [member.street, member.houseNumber].filter(Boolean).join(" ")
@@ -6,31 +12,20 @@ function address(member) {
   return [street, place].filter(Boolean).join(", ")
 }
 
-function MemberFacts({ member }) {
-  if (member.unreadable) {
-    return <p className="mb-0">Die Angaben können nicht gelesen werden.</p>
-  }
-  return (
-    <dl className="row mb-0 small">
-      <dt className="col-5">Adresse</dt>
-      <dd className="col-7">{address(member) || "—"}</dd>
-      <dt className="col-5">E-Mail</dt>
-      <dd className="col-7 text-break">{member.email || "—"}</dd>
-      <dt className="col-5">Beitrag</dt>
-      <dd className="col-7">{formatEuro(member.contributionCents)} €</dd>
-      <dt className="col-5">Bank</dt>
-      <dd className="col-7">{member.bankName || "—"}</dd>
-      <dt className="col-5">IBAN</dt>
-      <dd className="col-7">{member.ibanStored ? "••••" : "—"}</dd>
-      <dt className="col-5">Kontoinhaber</dt>
-      <dd className="col-7">{member.accountHolder || "—"}</dd>
-    </dl>
-  )
+function entryDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value ?? ""))) return "—"
+  const [year, month, day] = value.split("-")
+  return `${day}.${month}.${year}`
 }
 
-export default function MembersList({ members }) {
+function person(member) {
+  if (member.unreadable) return "Nicht lesbar"
+  return [member.familyName, member.givenName].filter(Boolean).join(", ")
+}
+
+export default function MembersList({ members, letter }) {
   if (members.length === 0) {
-    return <p className="text-secondary mb-0">Noch keine Mitglieder erfasst.</p>
+    return <p className="text-secondary mb-0">Keine Mitglieder für diesen Anfangsbuchstaben.</p>
   }
 
   return (
@@ -42,11 +37,30 @@ export default function MembersList({ members }) {
               <article className="card h-100">
                 <div className="card-body">
                   <h2 className="h6 mb-3">
-                    {member.unreadable
-                      ? "Mitglied"
-                      : [member.givenName, member.familyName].filter(Boolean).join(" ")}
+                    {person(member)}
+                    {member.memberNumber ? <span className="fw-normal text-secondary"> · Nr. {member.memberNumber}</span> : null}
                   </h2>
-                  <MemberFacts member={member} />
+                  <dl className="row mb-3 small">
+                    <dt className="col-5">Eintritt</dt>
+                    <dd className="col-7">{entryDate(member.joinedOn)}</dd>
+                    <dt className="col-5">Adresse</dt>
+                    <dd className="col-7">{address(member) || "—"}</dd>
+                    <dt className="col-5">E-Mail</dt>
+                    <dd className="col-7 text-break">{member.email || "—"}</dd>
+                    <dt className="col-5">Beitrag</dt>
+                    <dd className="col-7">{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</dd>
+                    <dt className="col-5">Bank</dt>
+                    <dd className="col-7">
+                      {member.bankName || member.bic || "—"}
+                      {member.accountHolder ? <div className="text-secondary">{member.accountHolder}</div> : null}
+                    </dd>
+                  </dl>
+                  <div className="d-flex flex-wrap gap-2">
+                    <Link className="btn btn-sm btn-outline-secondary" href={`${memberHref(letter)}${letter ? "&" : "?"}bearbeiten=${member.id}`}>
+                      Ändern
+                    </Link>
+                    <DeleteMemberButton id={member.id} letter={letter} />
+                  </div>
                 </div>
               </article>
             </div>
@@ -58,31 +72,37 @@ export default function MembersList({ members }) {
           <thead>
             <tr>
               <th>Name</th>
+              <th>Eintritt</th>
               <th>Adresse</th>
               <th>E-Mail</th>
               <th>Beitrag</th>
               <th>Bank</th>
-              <th>IBAN</th>
+              <th><span className="visually-hidden">Aktionen</span></th>
             </tr>
           </thead>
           <tbody>
             {members.map((member) => (
               <tr key={member.id}>
                 <td>
-                  <div className="fw-semibold">
-                    {member.unreadable
-                      ? "Nicht lesbar"
-                      : [member.givenName, member.familyName].filter(Boolean).join(" ")}
-                  </div>
+                  <div className="fw-semibold">{person(member)}</div>
+                  {member.memberNumber ? <div className="small text-secondary">Nr. {member.memberNumber}</div> : null}
                 </td>
+                <td>{entryDate(member.joinedOn)}</td>
                 <td>{address(member) || "—"}</td>
                 <td className="text-break">{member.email || "—"}</td>
                 <td>{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</td>
                 <td>
-                  <div>{member.bankName || "—"}</div>
+                  <div>{member.bankName || member.bic || "—"}</div>
                   <div className="small text-secondary">{member.accountHolder}</div>
                 </td>
-                <td>{member.ibanStored ? "••••" : "—"}</td>
+                <td>
+                  <div className="d-flex flex-wrap gap-2">
+                    <Link className="btn btn-sm btn-outline-secondary" href={`${memberHref(letter)}${letter ? "&" : "?"}bearbeiten=${member.id}`}>
+                      Ändern
+                    </Link>
+                    <DeleteMemberButton id={member.id} letter={letter} />
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

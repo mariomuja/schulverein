@@ -74,9 +74,8 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
 
   return (
     <>
-      <SectionTabs user={user} active="antraege" />
-      <div className="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
-        <h1 className="h4 mb-0">Förderanträge</h1>
+      <SectionTabs active="antraege" />
+      <div className="d-flex justify-content-end gap-2 mb-3">
         <p className="mb-0 text-secondary">
           {givenName(user.name)}
           <span className="d-block d-md-inline">

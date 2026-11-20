@@ -1,8 +1,3 @@
-import path from "node:path"
-import { fileURLToPath } from "node:url"
-
-const root = path.dirname(fileURLToPath(import.meta.url))
-
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -12,12 +7,11 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net",
-      "worker-src 'self' blob: https://cdn.jsdelivr.net",
+      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
       "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
       "font-src 'self' https://cdn.jsdelivr.net",
       "img-src 'self' data: blob:",
-      "connect-src 'self' https://cdn.jsdelivr.net https://huggingface.co https://cdn-lfs.huggingface.co https://cas-bridge.xethub.hf.co https://us.aws.cdn.hf.co https://eu.aws.cdn.hf.co",
+      "connect-src 'self' https://cdn.jsdelivr.net",
       "frame-src 'self' blob:",
       "frame-ancestors 'none'",
       "base-uri 'self'",
@@ -41,17 +35,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "12mb",
     },
-  },
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        "@huggingface/transformers": path.join(root, "node_modules/@huggingface/transformers/dist/transformers.web.js"),
-        "onnxruntime-node": false,
-        sharp: false,
-      }
-    }
-    return config
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }]
