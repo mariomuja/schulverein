@@ -13,7 +13,7 @@ import { givenName, hasGivenAndFamilyName } from "../lib/names"
 import { archivePeriod } from "../lib/archive"
 import { appendLog, sealApplication } from "../lib/seal"
 import { acceptReceipt, maxReceipts } from "../lib/receipts"
-import { canEditMembers, ensureAccess } from "../lib/access"
+import { canAdministerUsers, canEditMembers, ensureAccess } from "../lib/access"
 import { deleteMember as removeMember, insertMember, memberFromFields, updateMember as replaceMember } from "../lib/members"
 import { hashSecret } from "../lib/secret"
 
@@ -322,7 +322,7 @@ function cleanName(value) {
 
 export async function addUser(formData) {
   const user = await getUser()
-  if (!user?.can_write) redirect("/?hinweis=recht")
+  if (!canAdministerUsers(user)) redirect("/?hinweis=recht")
 
   const name = givenName(cleanName(formData.get("name")))
   const roleLabel = cleanName(formData.get("roleLabel"))
@@ -370,19 +370,9 @@ function userId(formData) {
   return id
 }
 
-async function assertActiveWriter() {
-  const user = await getUser()
-  if (!user?.can_write) redirect("/?hinweis=recht")
-  const active = await query(
-    `SELECT login_token IS NOT NULL AS token_active FROM users WHERE id = $1`,
-    [user.id],
-  )
-  if (!active.rows[0]?.token_active) redirect("/?hinweis=recht")
-  return user
-}
-
 export async function deactivateUserToken(formData) {
-  const user = await assertActiveWriter()
+  const user = await getUser()
+  if (!canAdministerUsers(user)) redirect("/?hinweis=recht")
 
   const id = userId(formData)
   if (!id) redirect("/?hinweis=benutzer")
@@ -416,8 +406,8 @@ export async function renewUserToken(formData) {
   if (!actor) redirect("/")
   const id = userId(formData)
   if (!id) redirect("/?hinweis=benutzer")
-  const user = actor.can_write ? await assertActiveWriter() : actor
-  if (!actor.can_write && id !== actor.id) redirect("/?hinweis=recht")
+  if (!canAdministerUsers(actor) && id !== actor.id) redirect("/?hinweis=recht")
+  const user = actor
 
   const token = randomBytes(32).toString("base64url")
   const sessionId = hashSecret((await cookies()).get("sv_session")?.value ?? "")
@@ -448,7 +438,7 @@ export async function renewUserToken(formData) {
 
 export async function removeUser(formData) {
   const user = await getUser()
-  if (!user?.can_write) redirect("/?hinweis=recht")
+  if (!canAdministerUsers(user)) redirect("/?hinweis=recht")
 
   const id = Number(formData.get("userId"))
   if (!Number.isInteger(id) || id <= 0) redirect("/?hinweis=benutzer")
@@ -499,7 +489,7 @@ function limited(value, max) {
 
 export async function updateUserAccess(formData) {
   const user = await getUser()
-  if (!user?.can_write) redirect("/?hinweis=recht")
+  if (!canAdministerUsers(user)) redirect("/?hinweis=recht")
   const id = userId(formData)
   const applicationsWrite = formData.get("applicationsAccess") === "write"
   const membersAccess = String(formData.get("membersAccess") ?? "none")

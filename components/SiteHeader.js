@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { cookies } from "next/headers"
 import { logout } from "../app/actions"
+import { canAdministerUsers } from "../lib/access"
 import { getUser } from "../lib/auth"
 import { accountLinks } from "../lib/account-links"
 import TokenReminder from "./TokenReminder"
@@ -11,7 +12,8 @@ export default async function SiteHeader() {
   const jar = await cookies()
   const showTokenHint = jar.get("sv_token_hint")?.value === "1"
   const accounts = user ? await accountLinks() : []
-  const visibleAccounts = user?.can_write
+  const canAdminister = canAdministerUsers(user)
+  const visibleAccounts = canAdminister
     ? accounts
     : accounts.filter((account) => account.id === user.id)
 
@@ -33,7 +35,7 @@ export default async function SiteHeader() {
             <Suspense fallback={null}>
               <UserAdmin
                 accounts={visibleAccounts}
-                canAdminister={Boolean(user.can_write)}
+                canAdminister={canAdminister}
                 currentUserId={user.id}
               />
             </Suspense>
