@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { addUser, deactivateUserToken, removeUser, renewUserToken, updateUserAccess } from "../app/actions"
 import { givenName } from "../lib/names"
 import CopyTokenButton from "./CopyTokenButton"
@@ -10,6 +10,80 @@ import CopyTokenButton from "./CopyTokenButton"
 const hints = {
   benutzer: "Der Benutzer konnte nicht gespeichert werden. Bitte den Namen prüfen.",
   stimme: "Dieser Benutzer hat bereits abgestimmt und kann nicht entfernt werden.",
+}
+
+function AccessForm({ account }) {
+  const router = useRouter()
+  const [applications, setApplications] = useState(account.canWrite ? "write" : "read")
+  const [members, setMembers] = useState(account.membersAccess ?? "none")
+  const [pending, setPending] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    setApplications(account.canWrite ? "write" : "read")
+    setMembers(account.membersAccess ?? "none")
+  }, [account.canWrite, account.membersAccess])
+
+  return (
+    <form
+      action={async (formData) => {
+        setPending(true)
+        setSaved(false)
+        formData.set("applicationsAccess", applications)
+        formData.set("membersAccess", members)
+        await updateUserAccess(formData)
+        setPending(false)
+        setSaved(true)
+        router.refresh()
+      }}
+      className="row g-2 align-items-end mb-2"
+    >
+      <input type="hidden" name="userId" value={account.id} />
+      <div className="col-12 col-md-4">
+        <label className="form-label small mb-1" htmlFor={`applications-${account.id}`}>
+          Förderanträge
+        </label>
+        <select
+          id={`applications-${account.id}`}
+          className="form-select form-select-sm"
+          name="applicationsAccess"
+          value={applications}
+          onChange={(event) => {
+            setApplications(event.target.value)
+            setSaved(false)
+          }}
+        >
+          <option value="read">Leserecht</option>
+          <option value="write">Schreibrecht</option>
+        </select>
+      </div>
+      <div className="col-12 col-md-4">
+        <label className="form-label small mb-1" htmlFor={`members-${account.id}`}>
+          Mitglieder
+        </label>
+        <select
+          id={`members-${account.id}`}
+          className="form-select form-select-sm"
+          name="membersAccess"
+          value={members}
+          onChange={(event) => {
+            setMembers(event.target.value)
+            setSaved(false)
+          }}
+        >
+          <option value="none">Kein Zugang</option>
+          <option value="read">Leserecht</option>
+          <option value="write">Schreibrecht</option>
+        </select>
+      </div>
+      <div className="col-12 col-md-4 d-flex flex-wrap align-items-center gap-2">
+        <button className="btn btn-outline-primary btn-sm" type="submit" disabled={pending}>
+          {pending ? "Speichert…" : "Rechte speichern"}
+        </button>
+        {saved ? <span className="small text-success">Gespeichert</span> : null}
+      </div>
+    </form>
+  )
 }
 
 export default function UserAdmin({ accounts, canAdminister = false, currentUserId }) {
@@ -145,45 +219,7 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
                           {account.canWrite ? "Schreibrecht" : "Leserecht"}
                           {!account.tokenActive ? " · Token deaktiviert" : ""}
                         </div>
-                        {canAdminister ? (
-                        <form action={updateUserAccess} className="row g-2 align-items-end mb-2">
-                          <input type="hidden" name="userId" value={account.id} />
-                          <div className="col-12 col-md-4">
-                            <label className="form-label small mb-1" htmlFor={`applications-${account.id}`}>
-                              Förderanträge
-                            </label>
-                            <select
-                              id={`applications-${account.id}`}
-                              className="form-select form-select-sm"
-                              name="applicationsAccess"
-                              defaultValue={account.canWrite ? "write" : "read"}
-                            >
-                              <option value="read">Leserecht</option>
-                              <option value="write">Schreibrecht</option>
-                            </select>
-                          </div>
-                          <div className="col-12 col-md-4">
-                            <label className="form-label small mb-1" htmlFor={`members-${account.id}`}>
-                              Mitglieder
-                            </label>
-                            <select
-                              id={`members-${account.id}`}
-                              className="form-select form-select-sm"
-                              name="membersAccess"
-                              defaultValue={account.membersAccess ?? "none"}
-                            >
-                              <option value="none">Kein Zugang</option>
-                              <option value="read">Leserecht</option>
-                              <option value="write">Schreibrecht</option>
-                            </select>
-                          </div>
-                          <div className="col-12 col-md-4">
-                            <button className="btn btn-outline-primary btn-sm" type="submit">
-                              Rechte speichern
-                            </button>
-                          </div>
-                        </form>
-                        ) : null}
+                        {canAdminister ? <AccessForm account={account} /> : null}
                         <div className="d-flex flex-wrap gap-2">
                           {canAdminister && account.canWrite && account.tokenActive ? (
                             <form

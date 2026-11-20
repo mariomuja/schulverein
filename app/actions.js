@@ -509,8 +509,7 @@ export async function updateUserAccess(formData) {
       `${updated.rows[0].name}: Förderanträge ${applicationsWrite ? "Schreibrecht" : "Leserecht"}, Mitglieder ${membersAccess}.`,
     ],
   )
-  revalidatePath("/")
-  revalidatePath("/mitglieder")
+  revalidatePath("/", "layout")
 }
 
 function memberRedirect(letter, notice) {
