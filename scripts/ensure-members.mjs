@@ -203,6 +203,17 @@ if (appRole && /^[A-Za-z_][A-Za-z0-9_]*$/.test(appRole)) {
 }
 
 await db.query(`
+  CREATE TABLE IF NOT EXISTS bank_codes (
+    blz CHAR(8) PRIMARY KEY,
+    bic TEXT NOT NULL,
+    name TEXT NOT NULL
+  )
+`)
+if (appRole && /^[A-Za-z_][A-Za-z0-9_]*$/.test(appRole)) {
+  await db.query(`GRANT SELECT ON bank_codes TO "${appRole}"`)
+}
+
+await db.query(`
   CREATE TABLE IF NOT EXISTS invitation_deliveries (
     batch_hash TEXT NOT NULL,
     email_hash TEXT NOT NULL,

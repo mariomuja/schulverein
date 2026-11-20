@@ -16,6 +16,7 @@ import { acceptReceipt, maxReceipts } from "../lib/receipts"
 import { canAdministerUsers, canEditMembers, canReadMembers, ensureAccess, isJoinAccount } from "../lib/access"
 import { getMember, insertMember, markMemberDeleted, memberFromFields, preserveBankData, replaceDraftConfirmation, restoreMember as restoreMemberRecord, splitEmails, updateMember as replaceMember } from "../lib/members"
 import { confirmJoinRequest, sendConfirmationMail, submitJoinRequest } from "../lib/join"
+import { findBankByBlz } from "../lib/banks.mjs"
 import { hashSecret } from "../lib/secret"
 import { sendTemplateMail, updateMailTemplate } from "../lib/outgoing-mail"
 import { deliverInvitation, readAgenda } from "../lib/invitation"
@@ -752,6 +753,12 @@ export async function setVotingClosed(formData) {
   const result = await withTransaction((q) => sealApplication(q, id, user))
   if (result.error) redirect(`/?hinweis=${result.error}`)
   revalidatePath("/")
+}
+
+export async function lookupBank(blz) {
+  const user = await getUser()
+  if (!isJoinAccount(user)) return null
+  return findBankByBlz(blz)
 }
 
 export async function submitJoin(formData) {
