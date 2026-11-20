@@ -22,6 +22,9 @@ await db.query(
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS members_access TEXT NOT NULL DEFAULT 'none'`,
 )
 await db.query(
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS login_count INTEGER NOT NULL DEFAULT 0`,
+)
+await db.query(
   `ALTER TABLE settings ADD COLUMN IF NOT EXISTS members_access_seeded BOOLEAN NOT NULL DEFAULT FALSE`,
 )
 const seeded = await db.query(`SELECT members_access_seeded FROM settings WHERE id = 1`)

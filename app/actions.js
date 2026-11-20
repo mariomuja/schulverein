@@ -412,10 +412,12 @@ export async function deactivateUserToken(formData) {
 }
 
 export async function renewUserToken(formData) {
-  const user = await assertActiveWriter()
-
+  const actor = await getUser()
+  if (!actor) redirect("/")
   const id = userId(formData)
   if (!id) redirect("/?hinweis=benutzer")
+  const user = actor.can_write ? await assertActiveWriter() : actor
+  if (!actor.can_write && id !== actor.id) redirect("/?hinweis=recht")
 
   const token = randomBytes(32).toString("base64url")
   const sessionId = hashSecret((await cookies()).get("sv_session")?.value ?? "")
@@ -424,7 +426,6 @@ export async function renewUserToken(formData) {
       `UPDATE users
        SET login_token = $2
        WHERE id = $1
-         AND ((can_write AND login_token IS NOT NULL) OR NOT can_write)
        RETURNING name`,
       [id, hashSecret(token)],
     )

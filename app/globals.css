@@ -3,6 +3,12 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
+.token-reminder {
+  color: #997404;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
 .logo {
   display: block;
   flex: 0 1 auto;

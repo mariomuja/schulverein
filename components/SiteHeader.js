@@ -1,12 +1,19 @@
 import { Suspense } from "react"
+import { cookies } from "next/headers"
 import { logout } from "../app/actions"
 import { getUser } from "../lib/auth"
 import { accountLinks } from "../lib/account-links"
+import TokenReminder from "./TokenReminder"
 import UserAdmin from "./UserAdmin"
 
 export default async function SiteHeader() {
   const user = await getUser()
-  const accounts = user?.can_write ? await accountLinks() : []
+  const jar = await cookies()
+  const showTokenHint = jar.get("sv_token_hint")?.value === "1"
+  const accounts = user ? await accountLinks() : []
+  const visibleAccounts = user?.can_write
+    ? accounts
+    : accounts.filter((account) => account.id === user.id)
 
   return (
     <header className="bg-white border-bottom">
@@ -23,14 +30,17 @@ export default async function SiteHeader() {
                 Abmelden
               </button>
             </form>
-            {user.can_write ? (
-              <Suspense fallback={null}>
-                <UserAdmin accounts={accounts} canManage={user.can_write} />
-              </Suspense>
-            ) : null}
+            <Suspense fallback={null}>
+              <UserAdmin
+                accounts={visibleAccounts}
+                canAdminister={Boolean(user.can_write)}
+                currentUserId={user.id}
+              />
+            </Suspense>
           </div>
         ) : null}
       </div>
+      {showTokenHint ? <TokenReminder /> : null}
     </header>
   )
 }

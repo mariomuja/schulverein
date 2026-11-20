@@ -11,7 +11,7 @@ const hints = {
   stimme: "Dieser Benutzer hat bereits abgestimmt und kann nicht entfernt werden.",
 }
 
-export default function UserAdmin({ accounts, canManage = false }) {
+export default function UserAdmin({ accounts, canAdminister = false, currentUserId }) {
   const params = useSearchParams()
   const hint = params.get("hinweis")
   const message = hints[hint] ?? ""
@@ -46,8 +46,6 @@ export default function UserAdmin({ accounts, canManage = false }) {
       document.removeEventListener("keydown", onKeyDown)
     }
   }, [open])
-
-  if (!canManage) return null
 
   return (
     <>
@@ -92,6 +90,7 @@ export default function UserAdmin({ accounts, canManage = false }) {
                   />
                 </div>
                 <div className="modal-body">
+                  {canAdminister ? (
                   <div className="alert alert-light border small mb-3" role="note">
                     <ul className="mb-0 ps-3">
                       <li>
@@ -101,7 +100,7 @@ export default function UserAdmin({ accounts, canManage = false }) {
                       </li>
                       <li>
                         <span className="fw-semibold">Neues Token:</span> das alte Token wird
-                        ungültig. Der Nutzer kann sich nur noch mit dem neuen Token anmelden.
+                        ungültig. Der neue Anmeldelink wird nur dieses eine Mal vollständig angezeigt.
                       </li>
                       <li>
                         <span className="fw-semibold">Entfernen:</span> das Konto wird gelöscht. Dies
@@ -114,18 +113,23 @@ export default function UserAdmin({ accounts, canManage = false }) {
                       </li>
                     </ul>
                   </div>
+                  ) : (
+                    <p className="small text-secondary">
+                      Ein neues Token macht den bisherigen Anmeldelink ungültig. Der neue Link wird nur einmal angezeigt.
+                    </p>
+                  )}
                   {message ? (
                     <div className="alert alert-warning" role="status">
                       {message}
                     </div>
                   ) : null}
-                  {issued ? (
-                    <div className="alert alert-info d-flex flex-wrap align-items-center gap-2" role="status">
-                      <span>
-                        Anmeldelink für {givenName(issued.name)} ist bereit. Er wird nicht angezeigt
-                        und nur jetzt zum Kopieren angeboten.
-                      </span>
-                      <CopyTokenButton url={issued.url} />
+                  {issued?.loginUrl ? (
+                    <div className="alert alert-info" role="status">
+                      <p className="mb-2">
+                        Anmeldelink für {givenName(issued.name)}. Er wird nur dieses eine Mal angezeigt.
+                      </p>
+                      <p className="font-monospace small text-break mb-2">{issued.loginUrl}</p>
+                      <CopyTokenButton url={issued.loginUrl} />
                     </div>
                   ) : null}
                   <ul className="list-group list-group-flush mb-3">
@@ -137,6 +141,7 @@ export default function UserAdmin({ accounts, canManage = false }) {
                           {account.canWrite ? "Schreibrecht" : "Leserecht"}
                           {!account.tokenActive ? " · Token deaktiviert" : ""}
                         </div>
+                        {canAdminister ? (
                         <form action={updateUserAccess} className="row g-2 align-items-end mb-2">
                           <input type="hidden" name="userId" value={account.id} />
                           <div className="col-12 col-md-4">
@@ -174,37 +179,38 @@ export default function UserAdmin({ accounts, canManage = false }) {
                             </button>
                           </div>
                         </form>
-                        {account.canWrite ? (
-                          <div className="d-flex flex-wrap gap-2">
-                            {account.tokenActive ? (
-                              <form
-                                action={async (formData) => {
-                                  await deactivateUserToken(formData)
-                                  setIssued((current) =>
-                                    current?.id === account.id ? null : current,
-                                  )
-                                }}
-                              >
-                                <input type="hidden" name="userId" value={account.id} />
-                                <button className="btn btn-outline-primary btn-sm" type="submit">
-                                  Token deaktivieren
-                                </button>
-                              </form>
-                            ) : null}
-                            {account.tokenActive ? (
-                              <form
-                                action={async (formData) => {
-                                  const renewed = await renewUserToken(formData)
-                                  if (renewed?.loginUrl) setIssued(renewed)
-                                }}
-                              >
-                                <input type="hidden" name="userId" value={account.id} />
-                                <button className="btn btn-outline-primary btn-sm" type="submit">
-                                  Neues Token
-                                </button>
-                              </form>
-                            ) : null}
-                            {account.hasVoted ? (
+                        ) : null}
+                        <div className="d-flex flex-wrap gap-2">
+                          {canAdminister && account.canWrite && account.tokenActive ? (
+                            <form
+                              action={async (formData) => {
+                                await deactivateUserToken(formData)
+                                setIssued((current) =>
+                                  current?.id === account.id ? null : current,
+                                )
+                              }}
+                            >
+                              <input type="hidden" name="userId" value={account.id} />
+                              <button className="btn btn-outline-primary btn-sm" type="submit">
+                                Token deaktivieren
+                              </button>
+                            </form>
+                          ) : null}
+                          {canAdminister || account.id === currentUserId ? (
+                            <form
+                              action={async (formData) => {
+                                const renewed = await renewUserToken(formData)
+                                if (renewed?.loginUrl) setIssued(renewed)
+                              }}
+                            >
+                              <input type="hidden" name="userId" value={account.id} />
+                              <button className="btn btn-outline-primary btn-sm" type="submit">
+                                Neues Token
+                              </button>
+                            </form>
+                          ) : null}
+                          {canAdminister && account.canWrite ? (
+                            account.hasVoted ? (
                               <span className="small text-secondary align-self-center">
                                 Hat bereits abgestimmt
                               </span>
@@ -215,14 +221,14 @@ export default function UserAdmin({ accounts, canManage = false }) {
                                   Entfernen
                                 </button>
                               </form>
-                            )}
-                          </div>
-                        ) : account.hasVoted ? (
-                          <span className="small text-secondary">Hat bereits abgestimmt</span>
-                        ) : null}
+                            )
+                          ) : null}
+                        </div>
                       </li>
                     ))}
                   </ul>
+                  {canAdminister ? (
+                  <>
                   <h3 className="h6">Benutzer hinzufügen</h3>
                   <form
                     ref={addFormRef}
@@ -285,6 +291,8 @@ export default function UserAdmin({ accounts, canManage = false }) {
                       </button>
                     </div>
                   </form>
+                  </>
+                  ) : null}
                 </div>
               </div>
             </div>

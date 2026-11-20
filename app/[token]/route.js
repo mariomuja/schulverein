@@ -18,6 +18,10 @@ export async function GET(request, context) {
   if (!user) return NextResponse.redirect(home)
 
   const sessionId = randomBytes(32).toString("base64url")
+  const counted = await query(
+    `UPDATE users SET login_count = login_count + 1 WHERE id = $1 RETURNING login_count`,
+    [user.id],
+  )
   await query(
     `INSERT INTO sessions (id, user_id, expires_at)
      VALUES ($1, $2, NOW() + ($3 * INTERVAL '1 day'))`,
@@ -34,5 +38,14 @@ export async function GET(request, context) {
     path: "/",
     maxAge: 60 * 60 * 24 * sessionDays,
   })
+  if (Number(counted.rows[0]?.login_count) % 10 === 0) {
+    response.cookies.set("sv_token_hint", "1", {
+      httpOnly: false,
+      sameSite: "lax",
+      secure: request.nextUrl.protocol === "https:",
+      path: "/",
+      maxAge: 120,
+    })
+  }
   return response
 }
