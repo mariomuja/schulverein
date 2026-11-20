@@ -164,7 +164,7 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
                       <input type="hidden" name="contribution" value={fields.contribution} />
                     )}
                     <Field id={`${titleId}-mandate`} label="Mandatsreferenz" name="mandateId" value={fields.mandateId} onChange={(value) => setField("mandateId", value)} />
-                    <Field id={`${titleId}-bic`} label="BIC" name="bic" value={fields.bic} onChange={(value) => setField("bic", value)} />
+                    <Field id={`${titleId}-bic`} label="BIC" name="bic" value={fields.bic} onChange={(value) => setField("bic", value)} hint="Nur in diesem Formular sichtbar. Die Liste zeigt die BIC nicht." />
                     <Field id={`${titleId}-bank`} label="Name der Bank" name="bankName" value={fields.bankName} onChange={(value) => setField("bankName", value)} />
                     <Field id={`${titleId}-iban`} label="IBAN" name="iban" value={fields.iban} onChange={(value) => setField("iban", value)} hint="Nur in diesem Formular sichtbar. Die Liste zeigt die IBAN nicht." />
                     <Field id={`${titleId}-holder`} label="Kontoinhaber" name="accountHolder" value={fields.accountHolder} onChange={(value) => setField("accountHolder", value)} />

@@ -76,7 +76,7 @@ export default function MembersList({ members, letter }) {
                       <dd className="col-7">{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</dd>
                       <dt className="col-5">Bank</dt>
                       <dd className="col-7 mb-0">
-                        {member.bankName || member.bic || "—"}
+                        {member.bankName || "—"}
                         {member.accountHolder ? <div className="text-secondary">{member.accountHolder}</div> : null}
                       </dd>
                     </dl>
@@ -126,7 +126,7 @@ export default function MembersList({ members, letter }) {
                   <td className="text-break">{member.email || "—"}</td>
                   <td>{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</td>
                   <td>
-                    <div>{member.bankName || member.bic || "—"}</div>
+                    <div>{member.bankName || "—"}</div>
                     <div className="small text-secondary">{member.accountHolder}</div>
                   </td>
                 </tr>
