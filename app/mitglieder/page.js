@@ -4,7 +4,7 @@ import MembersList from "../../components/MembersList"
 import SectionTabs from "../../components/SectionTabs"
 import { canEditMembers, canReadMembers } from "../../lib/access"
 import { getUser } from "../../lib/auth"
-import { countMembers, familyLetter, getMember, listMembers } from "../../lib/members"
+import { countMembers, familyLetter, getMember, listMembers, withoutBankData } from "../../lib/members"
 
 export const dynamic = "force-dynamic"
 
@@ -48,7 +48,7 @@ export default async function MembersPage({ searchParams }) {
   if (editor) {
     members = await listMembers()
     const editId = Number(Array.isArray(params.bearbeiten) ? params.bearbeiten[0] : params.bearbeiten)
-    if (Number.isInteger(editId) && editId > 0) editing = await getMember(editId)
+    if (Number.isInteger(editId) && editId > 0) editing = withoutBankData(await getMember(editId))
   }
   const present = new Set(members.map((member) => member.letter).filter(Boolean))
   const shown = letter ? members.filter((member) => member.letter === letter) : members

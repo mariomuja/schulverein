@@ -14,7 +14,7 @@ import { archivePeriod } from "../lib/archive"
 import { appendLog, sealApplication } from "../lib/seal"
 import { acceptReceipt, maxReceipts } from "../lib/receipts"
 import { canAdministerUsers, canEditMembers, ensureAccess } from "../lib/access"
-import { deleteMember as removeMember, insertMember, memberFromFields, updateMember as replaceMember } from "../lib/members"
+import { deleteMember as removeMember, getMember, insertMember, memberFromFields, preserveBankData, updateMember as replaceMember } from "../lib/members"
 import { hashSecret } from "../lib/secret"
 
 function applicationId(formData) {
@@ -559,8 +559,10 @@ export async function updateMember(formData) {
   if (!canEditMembers(user) || !Number.isInteger(id) || id <= 0) redirect("/mitglieder")
   const data = memberFields(formData)
   if (!data) redirect(`${memberRedirect(letter, "mitglied")}&bearbeiten=${id}`)
+  const existing = await getMember(id)
+  if (!existing) redirect(memberRedirect(letter, "mitglied"))
   try {
-    const saved = await replaceMember(id, data)
+    const saved = await replaceMember(id, preserveBankData(data, existing))
     if (!saved) redirect(memberRedirect(letter, "mitglied"))
   } catch {
     redirect(memberRedirect(letter, "schluessel"))

@@ -57,12 +57,14 @@ function fromMember(member) {
             : "",
     joinedOn: member.joinedOn ?? "",
     mandateId: member.mandateId ?? "",
-    bic: member.bic ?? "",
-    bankName: member.bankName ?? "",
-    iban: member.iban ?? "",
-    accountHolder: member.accountHolder ?? "",
+    bic: "",
+    bankName: "",
+    iban: "",
+    accountHolder: "",
   }
 }
+
+const bankFields = new Set(["bic", "bankName", "iban", "accountHolder"])
 
 export default function MemberForm({ member = null, letter = "", startOpen = false, usedFields = null }) {
   const titleId = useId()
@@ -99,6 +101,7 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
   }, [open])
 
   function showField(name) {
+    if (member && bankFields.has(name)) return false
     if (member || !usedFields) return true
     if (name === "familyName" || name === "givenName" || name === "contribution") return true
     return Boolean(usedFields[name])
@@ -170,9 +173,9 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
                       <input type="hidden" name="contribution" value={fields.contribution} />
                     )}
                     {showField("mandateId") ? <Field id={`${titleId}-mandate`} label="Mandatsreferenz" name="mandateId" value={fields.mandateId} onChange={(value) => setField("mandateId", value)} /> : null}
-                    {showField("bic") ? <Field id={`${titleId}-bic`} label="BIC" name="bic" value={fields.bic} onChange={(value) => setField("bic", value)} hint="Nur in diesem Formular sichtbar. Die Liste zeigt die BIC nicht." /> : null}
+                    {showField("bic") ? <Field id={`${titleId}-bic`} label="BIC" name="bic" value={fields.bic} onChange={(value) => setField("bic", value)} hint="Nur bei der Erfassung. Danach wird die BIC nicht mehr angezeigt." /> : null}
                     {showField("bankName") ? <Field id={`${titleId}-bank`} label="Name der Bank" name="bankName" value={fields.bankName} onChange={(value) => setField("bankName", value)} /> : null}
-                    {showField("iban") ? <Field id={`${titleId}-iban`} label="IBAN" name="iban" value={fields.iban} onChange={(value) => setField("iban", value)} hint="Nur in diesem Formular sichtbar. Die Liste zeigt die IBAN nicht." /> : null}
+                    {showField("iban") ? <Field id={`${titleId}-iban`} label="IBAN" name="iban" value={fields.iban} onChange={(value) => setField("iban", value)} hint="Nur bei der Erfassung. Danach wird die IBAN nicht mehr angezeigt." /> : null}
                     {showField("accountHolder") ? <Field id={`${titleId}-holder`} label="Kontoinhaber" name="accountHolder" value={fields.accountHolder} onChange={(value) => setField("accountHolder", value)} /> : null}
                   </div>
                 </div>
