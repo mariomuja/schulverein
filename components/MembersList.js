@@ -341,14 +341,16 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
             </option>
           ))}
         </select>
-        <button
-          className="btn btn-outline-primary btn-sm text-nowrap"
-          type="button"
-          disabled={!chosenDeleted}
-          onClick={() => setPendingRestore(chosenDeleted)}
-        >
-          Löschen rückgängig
-        </button>
+        {deletedMembers.length > 0 ? (
+          <button
+            className="btn btn-outline-primary btn-sm text-nowrap"
+            type="button"
+            disabled={!chosenDeleted}
+            onClick={() => setPendingRestore(chosenDeleted)}
+          >
+            Löschen rückgängig
+          </button>
+        ) : null}
       </div>
       {rows.length === 0 ? (
         <p className="text-secondary mb-0">
