@@ -76,6 +76,46 @@ body {
   width: 10%;
 }
 
+.member-card-body {
+  position: relative;
+  padding-right: 2.75rem;
+}
+
+.member-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #dc3545;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.member-card-body .member-delete {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+}
+
+.member-delete:hover,
+.member-delete:focus-visible {
+  color: #b02a37;
+  background: #f8d7da;
+}
+
+.member-delete-backdrop {
+  z-index: 1060;
+}
+
+.member-delete-modal {
+  z-index: 1065;
+}
+
 .member-row {
   cursor: pointer;
 }

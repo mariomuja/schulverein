@@ -1,7 +1,9 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useId, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
+import { deleteMember } from "../app/actions"
 import { formatEuro } from "../lib/money"
 
 const columns = [
@@ -83,9 +85,27 @@ function compareRows(left, right, sort) {
 }
 
 function openEdit(event, router, href) {
+  if (event.target.closest(".member-delete")) return
   if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return
   if (event.key === " ") event.preventDefault()
   router.push(href, { scroll: false })
+}
+
+function DeleteButton({ member, onAsk }) {
+  return (
+    <button
+      type="button"
+      className="member-delete"
+      aria-label={`${person(member)} löschen`}
+      onClick={(event) => {
+        event.stopPropagation()
+        onAsk(member)
+      }}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      <i className="bi bi-x-lg" aria-hidden="true" />
+    </button>
+  )
 }
 
 function readWidths() {
@@ -117,8 +137,11 @@ export default function MembersList({ members, letter }) {
   const tableRef = useRef(null)
   const lineRefs = useRef([])
   const resizingRef = useRef(false)
+  const confirmTitleId = useId()
+  const confirmRef = useRef(null)
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState(null)
+  const [pendingDelete, setPendingDelete] = useState(null)
 
   const rows = useMemo(() => {
     const tokens = fold(query).split(/\s+/).filter(Boolean)
@@ -172,6 +195,16 @@ export default function MembersList({ members, letter }) {
       window.removeEventListener("resize", placeLines)
     }
   }, [rows])
+
+  useEffect(() => {
+    if (!pendingDelete) return undefined
+    confirmRef.current?.focus()
+    function onKeyDown(event) {
+      if (event.key === "Escape") setPendingDelete(null)
+    }
+    document.addEventListener("keydown", onKeyDown)
+    return () => document.removeEventListener("keydown", onKeyDown)
+  }, [pendingDelete])
 
   function toggleSort(key) {
     setSort((current) => {
@@ -297,7 +330,8 @@ export default function MembersList({ members, letter }) {
                         if (!member.unreadable) openEdit(event, router, href)
                       }}
                     >
-                      <div className="card-body">
+                      <div className="card-body member-card-body">
+                        <DeleteButton member={member} onAsk={setPendingDelete} />
                         <h2 className="h6 mb-3">
                           {person(member)}
                           {member.memberNumber ? (
@@ -378,8 +412,13 @@ export default function MembersList({ members, letter }) {
                         }}
                       >
                         <td>
-                          <div className="fw-semibold">{person(member)}</div>
-                          {member.memberNumber ? <div className="small text-secondary">Nr. {member.memberNumber}</div> : null}
+                          <div className="d-flex align-items-start justify-content-between gap-2">
+                            <div>
+                              <div className="fw-semibold">{person(member)}</div>
+                              {member.memberNumber ? <div className="small text-secondary">Nr. {member.memberNumber}</div> : null}
+                            </div>
+                            <DeleteButton member={member} onAsk={setPendingDelete} />
+                          </div>
                         </td>
                         <td>{entryDate(member.joinedOn)}</td>
                         <td>{member.email || "—"}</td>
@@ -407,6 +446,59 @@ export default function MembersList({ members, letter }) {
           </div>
         </>
       )}
+      {pendingDelete
+        ? createPortal(
+            <>
+              <div className="modal-backdrop fade show member-delete-backdrop" onClick={() => setPendingDelete(null)} />
+              <div
+                className="modal fade show d-block member-delete-modal"
+                role="presentation"
+                onClick={() => setPendingDelete(null)}
+              >
+                <div
+                  ref={confirmRef}
+                  className="modal-dialog modal-dialog-centered"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby={confirmTitleId}
+                  tabIndex={-1}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <form action={deleteMember} className="modal-content">
+                    <input type="hidden" name="memberId" value={pendingDelete.id} />
+                    <input type="hidden" name="letter" value={letter} />
+                    <div className="modal-header">
+                      <h2 className="modal-title h5" id={confirmTitleId}>
+                        Mitglied löschen
+                      </h2>
+                      <button
+                        className="btn-close"
+                        type="button"
+                        aria-label="Schließen"
+                        onClick={() => setPendingDelete(null)}
+                      />
+                    </div>
+                    <div className="modal-body">
+                      <p className="mb-0">
+                        {person(pendingDelete)} wirklich löschen? Das Mitglied wird entfernt und kann nicht
+                        wiederhergestellt werden.
+                      </p>
+                    </div>
+                    <div className="modal-footer">
+                      <button className="btn btn-outline-secondary" type="button" onClick={() => setPendingDelete(null)}>
+                        Abbrechen
+                      </button>
+                      <button className="btn btn-danger" type="submit">
+                        Löschen
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
     </>
   )
 }
