@@ -4,7 +4,6 @@ import { useEffect, useId, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { useRouter } from "next/navigation"
 import { submitJoin } from "../app/actions"
-import { ibanCaution } from "../lib/mandate.mjs"
 
 const messages = {
   angaben: "Bitte Name, Vorname, E-Mail-Adresse, Beitrag und IBAN prüfen.",
@@ -151,11 +150,6 @@ export default function JoinForm({ ticket }) {
             <div className="form-text">Nur ausfüllen, wenn das Konto einer anderen Person gehört.</div>
           </div>
           <div className="col-12">
-            <div className="alert alert-warning mb-0" id={`${titleId}-caution`} role="note">
-              {ibanCaution}
-            </div>
-          </div>
-          <div className="col-12">
             <label className="form-label" htmlFor={`${titleId}-iban`}>
               IBAN
             </label>
@@ -169,9 +163,11 @@ export default function JoinForm({ ticket }) {
               autoCapitalize="characters"
               spellCheck={false}
               aria-invalid={ibanInvalid}
-              aria-describedby={`${titleId}-caution`}
+              aria-describedby={`${titleId}-iban-hint`}
             />
-            <div className="form-text">Bitte Zeichen für Zeichen mit der Bankkarte vergleichen.</div>
+            <div className="form-text" id={`${titleId}-iban-hint`}>
+              Bitte Zeichen für Zeichen mit der Bankkarte vergleichen.
+            </div>
           </div>
           <div className="col-12">
             <label className="form-label" htmlFor={`${titleId}-bic`}>
