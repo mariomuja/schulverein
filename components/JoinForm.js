@@ -23,6 +23,31 @@ function SubmitButton({ ready }) {
   )
 }
 
+function FieldHelp({ label, text }) {
+  const tipId = useId()
+  const [open, setOpen] = useState(false)
+  return (
+    <span className={`join-help${open ? " is-open" : ""}`}>
+      <button
+        className="join-help-button"
+        type="button"
+        aria-label={label}
+        aria-expanded={open}
+        aria-describedby={tipId}
+        onClick={(event) => {
+          event.preventDefault()
+          setOpen((current) => !current)
+        }}
+      >
+        ?
+      </button>
+      <span className="join-help-bubble" id={tipId} role="tooltip">
+        {text}
+      </span>
+    </span>
+  )
+}
+
 export default function JoinForm({ ticket }) {
   const router = useRouter()
   const titleId = useId()
@@ -104,7 +129,6 @@ export default function JoinForm({ ticket }) {
             <div className="d-flex flex-wrap gap-3">
               {[
                 ["22", "22 €"],
-                ["25", "25 €"],
                 ["custom", "Anderer Betrag"],
               ].map(([value, label]) => (
                 <div className="form-check" key={value}>
@@ -140,7 +164,7 @@ export default function JoinForm({ ticket }) {
               />
             </div>
           ) : (
-            <input type="hidden" name="contribution" value={choice === "22" || choice === "25" ? choice : ""} />
+            <input type="hidden" name="contribution" value={choice === "22" ? choice : ""} />
           )}
           <div className="col-12">
             <label className="form-label" htmlFor={`${titleId}-holder`}>
@@ -150,9 +174,15 @@ export default function JoinForm({ ticket }) {
             <div className="form-text">Nur ausfüllen, wenn das Konto einer anderen Person gehört.</div>
           </div>
           <div className="col-12">
-            <label className="form-label" htmlFor={`${titleId}-iban`}>
-              IBAN
-            </label>
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <label className="form-label mb-0" htmlFor={`${titleId}-iban`}>
+                IBAN
+              </label>
+              <FieldHelp
+                label="Erklärung der IBAN"
+                text="Die IBAN ist die internationale Kontonummer. In Deutschland beginnt sie mit DE. Sie steht auf der Bankkarte, auf dem Kontoauszug und im Online-Banking."
+              />
+            </div>
             <input
               id={`${titleId}-iban`}
               className={`form-control${ibanInvalid ? " is-invalid" : ""}`}
@@ -170,9 +200,15 @@ export default function JoinForm({ ticket }) {
             </div>
           </div>
           <div className="col-12">
-            <label className="form-label" htmlFor={`${titleId}-bic`}>
-              BIC
-            </label>
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <label className="form-label mb-0" htmlFor={`${titleId}-bic`}>
+                BIC
+              </label>
+              <FieldHelp
+                label="Erklärung der BIC"
+                text="Die BIC ist die Kennung der Bank, meist 8 oder 11 Zeichen. Sie steht neben der IBAN auf der Bankkarte oder dem Kontoauszug. Bei einem deutschen Konto kann das Feld leer bleiben."
+              />
+            </div>
             <input
               id={`${titleId}-bic`}
               className="form-control"
