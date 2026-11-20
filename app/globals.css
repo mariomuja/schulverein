@@ -65,9 +65,18 @@ body {
 }
 
 @media (min-width: 1200px) {
-  .member-search,
-  .deleted-members-select {
+  .member-search {
     width: 18rem;
+  }
+
+  .deleted-members-bar {
+    width: 50%;
+  }
+
+  .deleted-members-select {
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 }
 

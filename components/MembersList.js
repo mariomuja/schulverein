@@ -323,7 +323,7 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
           autoComplete="off"
         />
       </div>
-      <div className="d-flex flex-column flex-xl-row align-items-xl-center gap-2 mb-3">
+      <div className="deleted-members-bar d-flex flex-column flex-xl-row align-items-xl-center gap-2 mb-3">
         <label className="form-label small mb-0 text-nowrap" htmlFor="deleted-members">
           Gelöschte Mitglieder
         </label>
