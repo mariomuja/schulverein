@@ -115,7 +115,7 @@ function DeleteButton({ member, onAsk }) {
 function readWidths() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey) ?? "")
-    if (!Array.isArray(saved) || saved.length !== columns.length) return null
+    if (!Array.isArray(saved) || saved.length !== columns.length + 1) return null
     if (!saved.every((value) => typeof value === "number" && value > 0)) return null
     return saved
   } catch {
@@ -124,6 +124,8 @@ function readWidths() {
 }
 
 function headerFloor(header) {
+  const marked = Number(header.dataset.floor)
+  if (marked) return marked
   const style = getComputedStyle(header)
   const extra =
     parseFloat(style.paddingLeft) +
@@ -301,7 +303,7 @@ export default function MembersList({ members, letter }) {
         </label>
         <input
           id="member-search"
-          className="form-control"
+          className="form-control member-search"
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -366,6 +368,7 @@ export default function MembersList({ members, letter }) {
                   {columns.map((column) => (
                     <col className={column.className} key={column.key} />
                   ))}
+                  <col className="col-delete" />
                 </colgroup>
                 <thead>
                   <tr>
@@ -390,6 +393,7 @@ export default function MembersList({ members, letter }) {
                         </th>
                       )
                     })}
+                    <th className="member-delete-col" data-floor="44" aria-label="Löschen" />
                   </tr>
                 </thead>
                 <tbody>
@@ -411,27 +415,29 @@ export default function MembersList({ members, letter }) {
                         }}
                       >
                         <td>{member.memberNumber || "—"}</td>
-                        <td>
-                          <div className="d-flex align-items-start justify-content-between gap-2">
-                            <div className="fw-semibold">{person(member)}</div>
-                            <DeleteButton member={member} onAsk={setPendingDelete} />
-                          </div>
-                        </td>
+                        <td className="fw-semibold">{person(member)}</td>
                         <td>{entryDate(member.joinedOn)}</td>
                         <td>{member.email || "—"}</td>
                         <td>{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</td>
+                        <td className="member-delete-col">
+                          <DeleteButton member={member} onAsk={setPendingDelete} />
+                        </td>
                       </tr>
                     )
                   })}
                 </tbody>
               </table>
-              {columns.slice(0, -1).map((column, index) => (
+              {columns.map((column, index) => (
                 <div
                   key={column.key}
                   className="col-line"
                   role="separator"
                   aria-orientation="vertical"
-                  aria-label={`Breite zwischen ${column.label} und ${columns[index + 1].label} ändern`}
+                  aria-label={
+                    columns[index + 1]
+                      ? `Breite zwischen ${column.label} und ${columns[index + 1].label} ändern`
+                      : "Breite der letzten Spalte ändern"
+                  }
                   ref={(node) => {
                     lineRefs.current[index] = node
                   }}

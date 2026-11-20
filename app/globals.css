@@ -56,24 +56,43 @@ body {
   overflow-wrap: anywhere;
 }
 
+.member-search {
+  width: 100%;
+}
+
+@media (min-width: 1200px) {
+  .member-search {
+    width: 18rem;
+  }
+}
+
 .member-table col.col-number {
   width: 10%;
 }
 
 .member-table col.col-name {
-  width: 26%;
+  width: 24%;
 }
 
 .member-table col.col-joined {
-  width: 15%;
+  width: 14%;
 }
 
 .member-table col.col-email {
-  width: 34%;
+  width: 32%;
 }
 
 .member-table col.col-contribution {
-  width: 15%;
+  width: 14%;
+}
+
+.member-table col.col-delete {
+  width: 6%;
+}
+
+.member-delete-col {
+  width: 3rem;
+  text-align: center;
 }
 
 .member-card-body {
