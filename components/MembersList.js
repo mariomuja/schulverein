@@ -259,7 +259,7 @@ export default function MembersList({ members, letter }) {
   return (
     <>
       <div className="mb-3">
-        <label className="form-label" htmlFor="member-search">
+        <label className="visually-hidden" htmlFor="member-search">
           Suchen
         </label>
         <input
@@ -268,7 +268,7 @@ export default function MembersList({ members, letter }) {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Name, Nummer, E-Mail, Beitrag oder Eintritt"
+          placeholder="Suchen"
           autoComplete="off"
         />
       </div>
