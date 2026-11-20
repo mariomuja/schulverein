@@ -15,6 +15,8 @@ export const metadata = {
   icons: { icon: "/logo.png", apple: "/logo.png" },
 }
 
+export const dynamic = "force-dynamic"
+
 export const viewport = {
   width: "device-width",
   initialScale: 1,

@@ -14,28 +14,37 @@ const hints = {
 
 function AccessForm({ account }) {
   const router = useRouter()
-  const [applications, setApplications] = useState(account.canWrite ? "write" : "read")
-  const [members, setMembers] = useState(account.membersAccess ?? "none")
+  const initialApplications = account.canWrite ? "write" : "read"
+  const initialMembers = account.membersAccess ?? "none"
+  const applicationsValue = useRef(initialApplications)
+  const membersValue = useRef(initialMembers)
+  const [applications, setApplications] = useState(initialApplications)
+  const [members, setMembers] = useState(initialMembers)
   const [pending, setPending] = useState(false)
   const [saved, setSaved] = useState(false)
+  const saveGeneration = useRef(0)
 
-  useEffect(() => {
-    setApplications(account.canWrite ? "write" : "read")
-    setMembers(account.membersAccess ?? "none")
-  }, [account.canWrite, account.membersAccess])
+  async function save(nextApplications, nextMembers) {
+    applicationsValue.current = nextApplications
+    membersValue.current = nextMembers
+    const generation = saveGeneration.current + 1
+    saveGeneration.current = generation
+    setPending(true)
+    setSaved(false)
+    const formData = new FormData()
+    formData.set("userId", String(account.id))
+    formData.set("applicationsAccess", nextApplications)
+    formData.set("membersAccess", nextMembers)
+    await updateUserAccess(formData)
+    if (generation !== saveGeneration.current) return
+    setPending(false)
+    setSaved(true)
+    router.refresh()
+  }
 
   return (
     <form
-      action={async (formData) => {
-        setPending(true)
-        setSaved(false)
-        formData.set("applicationsAccess", applications)
-        formData.set("membersAccess", members)
-        await updateUserAccess(formData)
-        setPending(false)
-        setSaved(true)
-        router.refresh()
-      }}
+      action={() => save(applicationsValue.current, membersValue.current)}
       className="row g-2 align-items-end mb-2"
     >
       <input type="hidden" name="userId" value={account.id} />
@@ -46,11 +55,11 @@ function AccessForm({ account }) {
         <select
           id={`applications-${account.id}`}
           className="form-select form-select-sm"
-          name="applicationsAccess"
           value={applications}
           onChange={(event) => {
-            setApplications(event.target.value)
-            setSaved(false)
+            const next = event.target.value
+            setApplications(next)
+            save(next, membersValue.current)
           }}
         >
           <option value="read">Leserecht</option>
@@ -64,11 +73,11 @@ function AccessForm({ account }) {
         <select
           id={`members-${account.id}`}
           className="form-select form-select-sm"
-          name="membersAccess"
           value={members}
           onChange={(event) => {
-            setMembers(event.target.value)
-            setSaved(false)
+            const next = event.target.value
+            setMembers(next)
+            save(applicationsValue.current, next)
           }}
         >
           <option value="none">Kein Zugang</option>
@@ -219,7 +228,12 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
                           {account.canWrite ? "Schreibrecht" : "Leserecht"}
                           {!account.tokenActive ? " · Token deaktiviert" : ""}
                         </div>
-                        {canAdminister ? <AccessForm account={account} /> : null}
+                        {canAdminister ? (
+                          <AccessForm
+                            key={`${account.id}-${account.canWrite ? "write" : "read"}-${account.membersAccess ?? "none"}`}
+                            account={account}
+                          />
+                        ) : null}
                         <div className="d-flex flex-wrap gap-2">
                           {canAdminister && account.canWrite && account.tokenActive ? (
                             <form
