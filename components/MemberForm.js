@@ -64,7 +64,7 @@ function fromMember(member) {
   }
 }
 
-export default function MemberForm({ member = null, letter = "", startOpen = false }) {
+export default function MemberForm({ member = null, letter = "", startOpen = false, usedFields = null }) {
   const titleId = useId()
   const router = useRouter()
   const [open, setOpen] = useState(Boolean(member) || startOpen)
@@ -98,6 +98,12 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
     }
   }, [open])
 
+  function showField(name) {
+    if (member || !usedFields) return true
+    if (name === "familyName" || name === "givenName" || name === "contribution") return true
+    return Boolean(usedFields[name])
+  }
+
   function setField(key, value) {
     setFields((current) => ({ ...current, [key]: value }))
   }
@@ -126,11 +132,11 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
                   <div className="row g-3">
                     {member ? <input type="hidden" name="memberId" value={member.id} /> : null}
                     <input type="hidden" name="letter" value={letter} />
-                    <Field id={`${titleId}-number`} label="Nr." name="memberNumber" value={fields.memberNumber} onChange={(value) => setField("memberNumber", value)} />
-                    <Field id={`${titleId}-joined`} label="Eintritt" name="joinedOn" type="date" value={fields.joinedOn} onChange={(value) => setField("joinedOn", value)} />
+                    {showField("memberNumber") ? <Field id={`${titleId}-number`} label="Nr." name="memberNumber" value={fields.memberNumber} onChange={(value) => setField("memberNumber", value)} /> : null}
+                    {showField("joinedOn") ? <Field id={`${titleId}-joined`} label="Eintritt" name="joinedOn" type="date" value={fields.joinedOn} onChange={(value) => setField("joinedOn", value)} /> : null}
                     <Field id={`${titleId}-family`} label="Name" name="familyName" value={fields.familyName} onChange={(value) => setField("familyName", value)} required />
                     <Field id={`${titleId}-given`} label="Vorname" name="givenName" value={fields.givenName} onChange={(value) => setField("givenName", value)} required />
-                    <Field id={`${titleId}-email`} label="E-Mail-Adresse" name="email" value={fields.email} onChange={(value) => setField("email", value)} />
+                    {showField("email") ? <Field id={`${titleId}-email`} label="E-Mail-Adresse" name="email" value={fields.email} onChange={(value) => setField("email", value)} /> : null}
                     <div className="col-12">
                       <span className="form-label d-block">Beitrag pro Schuljahr</span>
                       <div className="d-flex flex-wrap gap-3">
@@ -163,11 +169,11 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
                     ) : (
                       <input type="hidden" name="contribution" value={fields.contribution} />
                     )}
-                    <Field id={`${titleId}-mandate`} label="Mandatsreferenz" name="mandateId" value={fields.mandateId} onChange={(value) => setField("mandateId", value)} />
-                    <Field id={`${titleId}-bic`} label="BIC" name="bic" value={fields.bic} onChange={(value) => setField("bic", value)} hint="Nur in diesem Formular sichtbar. Die Liste zeigt die BIC nicht." />
-                    <Field id={`${titleId}-bank`} label="Name der Bank" name="bankName" value={fields.bankName} onChange={(value) => setField("bankName", value)} />
-                    <Field id={`${titleId}-iban`} label="IBAN" name="iban" value={fields.iban} onChange={(value) => setField("iban", value)} hint="Nur in diesem Formular sichtbar. Die Liste zeigt die IBAN nicht." />
-                    <Field id={`${titleId}-holder`} label="Kontoinhaber" name="accountHolder" value={fields.accountHolder} onChange={(value) => setField("accountHolder", value)} />
+                    {showField("mandateId") ? <Field id={`${titleId}-mandate`} label="Mandatsreferenz" name="mandateId" value={fields.mandateId} onChange={(value) => setField("mandateId", value)} /> : null}
+                    {showField("bic") ? <Field id={`${titleId}-bic`} label="BIC" name="bic" value={fields.bic} onChange={(value) => setField("bic", value)} hint="Nur in diesem Formular sichtbar. Die Liste zeigt die BIC nicht." /> : null}
+                    {showField("bankName") ? <Field id={`${titleId}-bank`} label="Name der Bank" name="bankName" value={fields.bankName} onChange={(value) => setField("bankName", value)} /> : null}
+                    {showField("iban") ? <Field id={`${titleId}-iban`} label="IBAN" name="iban" value={fields.iban} onChange={(value) => setField("iban", value)} hint="Nur in diesem Formular sichtbar. Die Liste zeigt die IBAN nicht." /> : null}
+                    {showField("accountHolder") ? <Field id={`${titleId}-holder`} label="Kontoinhaber" name="accountHolder" value={fields.accountHolder} onChange={(value) => setField("accountHolder", value)} /> : null}
                   </div>
                 </div>
                 <div className="modal-footer">

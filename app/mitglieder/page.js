@@ -14,6 +14,24 @@ export const metadata = {
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
 
+function filled(value) {
+  return String(value ?? "").trim() !== ""
+}
+
+function usedMemberFields(members) {
+  return {
+    memberNumber: members.some((member) => filled(member.memberNumber)),
+    joinedOn: members.some((member) => filled(member.joinedOn)),
+    email: members.some((member) => filled(member.email)),
+    contribution: members.some((member) => member.contributionCents),
+    mandateId: members.some((member) => filled(member.mandateId)),
+    bic: members.some((member) => member.bicStored),
+    bankName: members.some((member) => filled(member.bankName)),
+    iban: members.some((member) => member.ibanStored),
+    accountHolder: members.some((member) => filled(member.accountHolder)),
+  }
+}
+
 export default async function MembersPage({ searchParams }) {
   const user = await getUser()
   if (!user) redirect("/")
@@ -50,7 +68,7 @@ export default async function MembersPage({ searchParams }) {
       {editor ? (
         <>
           <div className="d-flex flex-wrap gap-2 mb-3">
-            <MemberForm letter={letter} />
+            <MemberForm letter={letter} usedFields={usedMemberFields(members)} />
             <a className="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" href="/mitglieder/emails">
               <i className="bi bi-download" aria-hidden="true" />
               eMails
