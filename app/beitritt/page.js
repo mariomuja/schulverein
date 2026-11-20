@@ -26,8 +26,9 @@ export default async function JoinPage({ searchParams }) {
       <div className="col-12 col-lg-8 col-xl-7">
         <h1 className="h4 mb-3">Ich möchte Mitglied im Schulverein des Gymnasiums Heidberg e.V. werden.</h1>
         <p>
-          Fülle das Formular aus. Danach schicken wir eine E-Mail an die angegebene Adresse. Erst der
-          Link in dieser E-Mail bestätigt die Adresse und das Lastschriftmandat.
+          Fülle das Formular aus. Danach schicken wir eine E-Mail an die angegebene Adresse. Mit dem
+          Link in der Mail bestätigst du deine Mail-Adresse und erlaubst uns, den Mitgliedsbetrag vom
+          angegebenen Konto einzuziehen.
         </p>
         {sent ? (
           <div className="alert alert-success" role="status">
