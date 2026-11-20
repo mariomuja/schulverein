@@ -8,25 +8,15 @@ const tabs = [
   { id: "statistik", href: "/statistik", label: "Statistik" },
 ]
 
-function roleLine(user) {
-  const parts = []
-  if (user.role_label) parts.push(user.role_label)
-  parts.push(user.can_write ? "Förderanträge Schreibrecht" : "Förderanträge Leserecht")
-  return parts.join(" · ")
-}
-
 export default async function SectionTabs({ active }) {
   const user = await getUser()
 
   return (
     <>
       {user ? (
-        <p className="mb-2 text-end text-secondary">
+        <p className="mb-2 small text-secondary">
           {givenName(user.name)}
-          <span className="d-block d-md-inline">
-            <span className="d-none d-md-inline"> · </span>
-            {roleLine(user)}
-          </span>
+          {user.role_label ? ` · ${user.role_label}` : ""}
         </p>
       ) : null}
       <ul className="nav nav-tabs mb-3">
