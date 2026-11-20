@@ -151,6 +151,7 @@ export default function MembersList({ members, deletedMembers = [], letter, canE
   const lineRefs = useRef([])
   const resizingRef = useRef(false)
   const confirmTitleId = useId()
+  const sendExitId = useId()
   const confirmRef = useRef(null)
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState(null)
@@ -546,10 +547,28 @@ export default function MembersList({ members, deletedMembers = [], letter, canE
                       />
                     </div>
                     <div className="modal-body">
-                      <p className="mb-0">
+                      <p>
                         {person(pendingDelete)} wirklich löschen? Das Mitglied verschwindet aus der Liste und
                         aus den Exporten.
                       </p>
+                      <div className="form-check form-switch mb-0">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          role="switch"
+                          id={sendExitId}
+                          name="sendExitMail"
+                          value="1"
+                          defaultChecked={Boolean(String(pendingDelete.email ?? "").trim())}
+                          disabled={!String(pendingDelete.email ?? "").trim()}
+                        />
+                        <label className="form-check-label" htmlFor={sendExitId}>
+                          Bestätigung an das Mitglied senden.
+                        </label>
+                      </div>
+                      {String(pendingDelete.email ?? "").trim() ? null : (
+                        <div className="form-text">Für dieses Mitglied ist keine E-Mail-Adresse gespeichert.</div>
+                      )}
                     </div>
                     <div className="modal-footer">
                       <button className="btn btn-outline-secondary" type="button" onClick={() => setPendingDelete(null)}>

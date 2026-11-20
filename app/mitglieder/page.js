@@ -83,6 +83,16 @@ export default async function MembersPage({ searchParams }) {
           Die Bestätigungsmail konnte nicht zugestellt werden. Der Hinweis steht beim Mitglied.
         </div>
       ) : null}
+      {hinweis === "austritt-mail" ? (
+        <div className="alert alert-warning" role="status">
+          Das Mitglied ist ausgetreten. Die Austrittsbestätigung konnte nicht zugestellt werden.
+        </div>
+      ) : null}
+      {hinweis === "keine-mail" ? (
+        <div className="alert alert-warning" role="status">
+          Das Mitglied ist ausgetreten. Es ist keine E-Mail-Adresse gespeichert, deshalb wurde keine Bestätigung gesendet.
+        </div>
+      ) : null}
       {hinweis === "schluessel" ? (
         <div className="alert alert-warning" role="status">
           Die Angaben konnten nicht verschlüsselt gespeichert werden.

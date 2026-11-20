@@ -1,6 +1,7 @@
 import fs from "fs"
 import pg from "pg"
 import { roleFromDatabaseUrl } from "./archive-schema.mjs"
+import { templateDefaults } from "../lib/mail-templates.mjs"
 
 for (const line of fs.readFileSync(".env.local", "utf8").split(/\r?\n/)) {
   const match = line.match(/^([A-Z0-9_]+)=(.*)$/)
@@ -178,6 +179,27 @@ if (!backfill.rows[0]?.members_confirmed_backfill) {
     `UPDATE members SET confirmed_at = COALESCE(created_at, NOW()) WHERE confirmed_at IS NULL`,
   )
   await db.query(`UPDATE settings SET members_confirmed_backfill = TRUE WHERE id = 1`)
+}
+
+await db.query(`
+  CREATE TABLE IF NOT EXISTS mail_templates (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    body TEXT NOT NULL,
+    sort_order INTEGER NOT NULL
+  )
+`)
+for (const template of templateDefaults) {
+  await db.query(
+    `INSERT INTO mail_templates (id, name, subject, body, sort_order)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (id) DO NOTHING`,
+    [template.id, template.name, template.subject, template.body, template.sortOrder],
+  )
+}
+if (appRole && /^[A-Za-z_][A-Za-z0-9_]*$/.test(appRole)) {
+  await db.query(`GRANT SELECT, UPDATE ON mail_templates TO "${appRole}"`)
 }
 
 if (process.env.DATABASE_URL) {

@@ -6,6 +6,7 @@ import { givenName } from "../lib/names"
 const tabs = [
   { id: "antraege", href: "/", label: "Förderanträge" },
   { id: "mitglieder", href: "/mitglieder", label: "Mitglieder" },
+  { id: "vorlagen", href: "/vorlagen", label: "eMail Vorlagen" },
   { id: "statistik", href: "/statistik", label: "Statistik" },
 ]
 
@@ -20,8 +21,8 @@ export default async function SectionTabs({ active }) {
           {user.role_label ? ` · ${user.role_label}` : ""}
         </p>
       ) : null}
-      <ul className="nav nav-tabs mb-3">
-        {tabs.filter((tab) => tab.id !== "mitglieder" || canReadMembers(user)).map((tab) => (
+      <ul className="nav nav-tabs flex-wrap mb-3">
+        {tabs.filter((tab) => (tab.id !== "mitglieder" && tab.id !== "vorlagen") || canReadMembers(user)).map((tab) => (
           <li className="nav-item" key={tab.id}>
             <Link
               className={`nav-link${active === tab.id ? " active" : ""}`}

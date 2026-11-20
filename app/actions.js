@@ -13,10 +13,11 @@ import { givenName, hasGivenAndFamilyName } from "../lib/names"
 import { archivePeriod } from "../lib/archive"
 import { appendLog, sealApplication } from "../lib/seal"
 import { acceptReceipt, maxReceipts } from "../lib/receipts"
-import { canAdministerUsers, canEditMembers, ensureAccess, isJoinAccount } from "../lib/access"
+import { canAdministerUsers, canEditMembers, canReadMembers, ensureAccess, isJoinAccount } from "../lib/access"
 import { getMember, insertMember, markMemberDeleted, memberFromFields, preserveBankData, replaceDraftConfirmation, restoreMember as restoreMemberRecord, splitEmails, updateMember as replaceMember } from "../lib/members"
 import { confirmJoinRequest, sendConfirmationMail, submitJoinRequest } from "../lib/join"
 import { hashSecret } from "../lib/secret"
+import { sendTemplateMail, updateMailTemplate } from "../lib/outgoing-mail"
 
 async function boardActor() {
   const user = await getUser()
@@ -580,6 +581,7 @@ export async function saveMember(formData) {
         token,
         addresses,
         givenName: data.givenName,
+        familyName: data.familyName,
       })
       if (mailing.note) {
         await replaceDraftConfirmation(id, data, hashSecret(token), mailing.note)
@@ -611,7 +613,12 @@ export async function resendMemberConfirmation(formData) {
   delete data.draft
   delete data.confirmationNote
   const token = randomBytes(32).toString("base64url")
-  const mailing = await sendConfirmationMail({ token, addresses, givenName: data.givenName })
+  const mailing = await sendConfirmationMail({
+    token,
+    addresses,
+    givenName: data.givenName,
+    familyName: data.familyName,
+  })
   const saved = await replaceDraftConfirmation(id, data, hashSecret(token), mailing.note)
   if (!saved) redirect(memberRedirect(letter, "mitglied"))
   revalidatePath("/mitglieder")
@@ -643,10 +650,48 @@ export async function deleteMember(formData) {
   const letter = String(formData.get("letter") ?? "")
   const id = Number(formData.get("memberId"))
   if (!canEditMembers(user) || !Number.isInteger(id) || id <= 0) redirect("/mitglieder")
-  await markMemberDeleted(id)
+  const member = await getMember(id)
+  const removed = await markMemberDeleted(id)
+  if (!removed) redirect(memberRedirect(letter))
+  let notice = ""
+  if (formData.get("sendExitMail") === "1") {
+    const addresses = splitEmails(member?.email)
+    if (addresses.length === 0) {
+      notice = "keine-mail"
+    } else {
+      let sent = false
+      try {
+        sent = await sendTemplateMail({
+          templateId: "austritt",
+          addresses,
+          values: {
+            Vorname: member?.givenName ?? "",
+            Name: member?.familyName ?? "",
+          },
+        })
+      } catch {
+        sent = false
+      }
+      if (sent !== true) notice = "austritt-mail"
+    }
+  }
   revalidatePath("/mitglieder")
   revalidatePath("/statistik")
-  redirect(memberRedirect(letter))
+  redirect(memberRedirect(letter, notice))
+}
+
+export async function saveMailTemplate(formData) {
+  const user = await boardActor()
+  if (!canReadMembers(user)) redirect("/statistik")
+  const id = String(formData.get("templateId") ?? "")
+  if (!canEditMembers(user)) redirect(`/vorlagen?vorlage=${encodeURIComponent(id)}`)
+  const subject = String(formData.get("subject") ?? "").replace(/[\r\n]+/g, " ").trim().slice(0, 200)
+  const body = String(formData.get("body") ?? "").replace(/\r\n/g, "\n").slice(0, 8000)
+  if (!subject || !body.trim() || !(await updateMailTemplate(id, subject, body))) {
+    redirect(`/vorlagen?vorlage=${encodeURIComponent(id)}&hinweis=vorlage`)
+  }
+  revalidatePath("/vorlagen")
+  redirect(`/vorlagen?vorlage=${encodeURIComponent(id)}&hinweis=gespeichert`)
 }
 
 export async function restoreMember(formData) {
