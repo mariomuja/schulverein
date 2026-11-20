@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import MemberForm from "../../components/MemberForm"
 import MembersList from "../../components/MembersList"
 import SectionTabs from "../../components/SectionTabs"
-import { canEditMembers } from "../../lib/access"
+import { canEditMembers, canReadMembers } from "../../lib/access"
 import { getUser } from "../../lib/auth"
 import { countMembers, familyLetter, getMember, listMembers } from "../../lib/members"
 
@@ -36,6 +36,7 @@ export default async function MembersPage({ searchParams }) {
   const user = await getUser()
   if (!user) redirect("/")
   const editor = canEditMembers(user)
+  const reader = canReadMembers(user)
   const params = await searchParams
   const hinweis = Array.isArray(params.hinweis) ? params.hinweis[0] : params.hinweis
   const requested = Array.isArray(params.buchstabe) ? params.buchstabe[0] : params.buchstabe
@@ -65,19 +66,25 @@ export default async function MembersPage({ searchParams }) {
           Die Angaben konnten nicht verschlüsselt gespeichert werden.
         </div>
       ) : null}
+      {editor || reader ? (
+        <div className="d-flex flex-wrap gap-2 mb-3">
+          {editor ? <MemberForm letter={letter} usedFields={usedMemberFields(members)} /> : null}
+          {reader ? (
+            <>
+              <a className="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" href="/mitglieder/emails">
+                <i className="bi bi-download" aria-hidden="true" />
+                eMails
+              </a>
+              <a className="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" href="/mitglieder/sepa">
+                <i className="bi bi-download" aria-hidden="true" />
+                SEPA
+              </a>
+            </>
+          ) : null}
+        </div>
+      ) : null}
       {editor ? (
         <>
-          <div className="d-flex flex-wrap gap-2 mb-3">
-            <MemberForm letter={letter} usedFields={usedMemberFields(members)} />
-            <a className="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" href="/mitglieder/emails">
-              <i className="bi bi-download" aria-hidden="true" />
-              eMails
-            </a>
-            <a className="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" href="/mitglieder/sepa">
-              <i className="bi bi-download" aria-hidden="true" />
-              SEPA
-            </a>
-          </div>
           <nav className="d-flex flex-wrap gap-1 mb-3" aria-label="Nach Nachnamen filtern">
             <a className={`btn btn-sm ${letter ? "btn-outline-secondary" : "btn-secondary"}`} href="/mitglieder">
               Alle
