@@ -10,12 +10,6 @@ function editHref(letter, id) {
   return `/mitglieder?${params}`
 }
 
-function address(member) {
-  const street = [member.street, member.houseNumber].filter(Boolean).join(" ")
-  const place = [member.postalCode, member.city].filter(Boolean).join(" ")
-  return [street, place].filter(Boolean).join(", ")
-}
-
 function entryDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value ?? ""))) return "—"
   const [year, month, day] = value.split("-")
@@ -68,8 +62,6 @@ export default function MembersList({ members, letter }) {
                     <dl className="row mb-0 small">
                       <dt className="col-5">Eintritt</dt>
                       <dd className="col-7">{entryDate(member.joinedOn)}</dd>
-                      <dt className="col-5">Adresse</dt>
-                      <dd className="col-7">{address(member) || "—"}</dd>
                       <dt className="col-5">E-Mail</dt>
                       <dd className="col-7 text-break">{member.email || "—"}</dd>
                       <dt className="col-5">Beitrag</dt>
@@ -90,7 +82,6 @@ export default function MembersList({ members, letter }) {
             <tr>
               <th>Name</th>
               <th>Eintritt</th>
-              <th>Adresse</th>
               <th>E-Mail</th>
               <th>Beitrag</th>
               <th>BIC</th>
@@ -119,7 +110,6 @@ export default function MembersList({ members, letter }) {
                     {member.memberNumber ? <div className="small text-secondary">Nr. {member.memberNumber}</div> : null}
                   </td>
                   <td>{entryDate(member.joinedOn)}</td>
-                  <td>{address(member) || "—"}</td>
                   <td className="text-break">{member.email || "—"}</td>
                   <td>{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</td>
                   <td>{member.bicStored ? "••••" : "—"}</td>

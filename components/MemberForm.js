@@ -9,10 +9,6 @@ const empty = {
   memberNumber: "",
   familyName: "",
   givenName: "",
-  street: "",
-  houseNumber: "",
-  postalCode: "",
-  city: "",
   email: "",
   contribution: "",
   joinedOn: "",
@@ -49,10 +45,6 @@ function fromMember(member) {
     memberNumber: member.memberNumber ?? "",
     familyName: member.familyName ?? "",
     givenName: member.givenName ?? "",
-    street: member.street ?? "",
-    houseNumber: member.houseNumber ?? "",
-    postalCode: member.postalCode ?? "",
-    city: member.city ?? "",
     email: member.email ?? "",
     contribution:
       member.contributionCents === 2200
@@ -126,10 +118,6 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
                     <Field id={`${titleId}-joined`} label="Eintritt" name="joinedOn" type="date" value={fields.joinedOn} onChange={(value) => setField("joinedOn", value)} />
                     <Field id={`${titleId}-family`} label="Name" name="familyName" value={fields.familyName} onChange={(value) => setField("familyName", value)} required />
                     <Field id={`${titleId}-given`} label="Vorname" name="givenName" value={fields.givenName} onChange={(value) => setField("givenName", value)} required />
-                    <Field id={`${titleId}-street`} label="Straße" name="street" value={fields.street} onChange={(value) => setField("street", value)} />
-                    <Field id={`${titleId}-house`} label="Hausnummer" name="houseNumber" value={fields.houseNumber} onChange={(value) => setField("houseNumber", value)} />
-                    <Field id={`${titleId}-postal`} label="PLZ" name="postalCode" value={fields.postalCode} onChange={(value) => setField("postalCode", value)} />
-                    <Field id={`${titleId}-city`} label="Ort" name="city" value={fields.city} onChange={(value) => setField("city", value)} />
                     <Field id={`${titleId}-email`} label="E-Mail-Adresse" name="email" value={fields.email} onChange={(value) => setField("email", value)} />
                     <div className="col-12">
                       <span className="form-label d-block">Beitrag pro Schuljahr</span>
