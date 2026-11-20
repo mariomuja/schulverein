@@ -14,7 +14,7 @@ export async function GET(request) {
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=windows-1252",
-      "Content-Disposition": `attachment; filename="SEPA-Einzug-Upload-File-${year}.csv"`,
+      "Content-Disposition": `attachment; filename="SEPA-Einzug-${year}.csv"`,
       "Cache-Control": "no-store",
     },
   })
