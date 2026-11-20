@@ -7,6 +7,7 @@ import { deleteMember } from "../app/actions"
 import { formatEuro } from "../lib/money"
 
 const columns = [
+  { key: "number", label: "Nr.", className: "col-number" },
   { key: "name", label: "Name", className: "col-name" },
   { key: "joined", label: "Eintritt", className: "col-joined" },
   { key: "email", label: "E-Mail", className: "col-email" },
@@ -65,7 +66,14 @@ function joinedValue(member) {
 function compareRows(left, right, sort) {
   if (left.unreadable || right.unreadable) return Number(Boolean(left.unreadable)) - Number(Boolean(right.unreadable))
   let result = 0
-  if (sort.key === "joined") {
+  if (sort.key === "number") {
+    const leftNumber = Number(String(left.memberNumber ?? "").trim())
+    const rightNumber = Number(String(right.memberNumber ?? "").trim())
+    const leftOk = String(left.memberNumber ?? "").trim() !== "" && Number.isFinite(leftNumber)
+    const rightOk = String(right.memberNumber ?? "").trim() !== "" && Number.isFinite(rightNumber)
+    if (!leftOk || !rightOk) return leftOk ? -1 : rightOk ? 1 : 0
+    result = leftNumber - rightNumber
+  } else if (sort.key === "joined") {
     const leftDate = joinedValue(left)
     const rightDate = joinedValue(right)
     if (!leftDate || !rightDate) return leftDate ? -1 : rightDate ? 1 : 0
@@ -332,13 +340,10 @@ export default function MembersList({ members, letter }) {
                     >
                       <div className="card-body member-card-body">
                         <DeleteButton member={member} onAsk={setPendingDelete} />
-                        <h2 className="h6 mb-3">
-                          {person(member)}
-                          {member.memberNumber ? (
-                            <span className="fw-normal text-secondary"> · Nr. {member.memberNumber}</span>
-                          ) : null}
-                        </h2>
+                        <h2 className="h6 mb-3">{person(member)}</h2>
                         <dl className="row mb-0 small">
+                          <dt className="col-5">Nr.</dt>
+                          <dd className="col-7">{member.memberNumber || "—"}</dd>
                           <dt className="col-5">Eintritt</dt>
                           <dd className="col-7">{entryDate(member.joinedOn)}</dd>
                           <dt className="col-5">E-Mail</dt>
@@ -411,12 +416,10 @@ export default function MembersList({ members, letter }) {
                           if (!member.unreadable) openEdit(event, router, href)
                         }}
                       >
+                        <td>{member.memberNumber || "—"}</td>
                         <td>
                           <div className="d-flex align-items-start justify-content-between gap-2">
-                            <div>
-                              <div className="fw-semibold">{person(member)}</div>
-                              {member.memberNumber ? <div className="small text-secondary">Nr. {member.memberNumber}</div> : null}
-                            </div>
+                            <div className="fw-semibold">{person(member)}</div>
                             <DeleteButton member={member} onAsk={setPendingDelete} />
                           </div>
                         </td>

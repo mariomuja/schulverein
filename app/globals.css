@@ -56,20 +56,24 @@ body {
   overflow-wrap: anywhere;
 }
 
+.member-table col.col-number {
+  width: 10%;
+}
+
 .member-table col.col-name {
-  width: 28%;
+  width: 24%;
 }
 
 .member-table col.col-joined {
-  width: 16%;
+  width: 14%;
 }
 
 .member-table col.col-email {
-  width: 32%;
+  width: 30%;
 }
 
 .member-table col.col-contribution {
-  width: 14%;
+  width: 12%;
 }
 
 .member-table col.col-bic {
