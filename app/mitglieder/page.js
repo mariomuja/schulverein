@@ -53,7 +53,7 @@ export default async function MembersPage({ searchParams }) {
             <MemberForm letter={letter} />
             <a className="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" href="/mitglieder/emails">
               <i className="bi bi-download" aria-hidden="true" />
-              TXT
+              eMails
             </a>
             <a className="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" href="/mitglieder/sepa">
               <i className="bi bi-download" aria-hidden="true" />
