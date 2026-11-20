@@ -26,6 +26,8 @@ function listedMember(member) {
     joinedOn: member.joinedOn ?? "",
     letter: member.letter ?? "",
     unreadable: Boolean(member.unreadable),
+    draft: Boolean(member.draft),
+    confirmationNote: member.confirmationNote ?? "",
   }
 }
 
@@ -74,6 +76,11 @@ export default async function MembersPage({ searchParams }) {
       {hinweis === "mitglied" ? (
         <div className="alert alert-warning" role="status">
           Das Mitglied konnte nicht gespeichert werden. Bitte Name, Vorname und Beitrag prüfen.
+        </div>
+      ) : null}
+      {hinweis === "zustellung" ? (
+        <div className="alert alert-warning" role="status">
+          Die Bestätigungsmail konnte nicht zugestellt werden. Der Hinweis steht beim Mitglied.
         </div>
       ) : null}
       {hinweis === "schluessel" ? (

@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
-import { saveMember, updateMember } from "../app/actions"
+import { saveMember, updateMember, resendMemberConfirmation } from "../app/actions"
 import { formatEuro } from "../lib/money"
 
 const empty = {
@@ -72,6 +72,8 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
   const [open, setOpen] = useState(Boolean(member) || startOpen)
   const [mounted, setMounted] = useState(false)
   const [fields, setFields] = useState(() => fromMember(member))
+  const [mailAsk, setMailAsk] = useState("")
+  const asksForMail = !member && fields.email.trim() !== ""
 
   useEffect(() => {
     setMounted(true)
@@ -139,7 +141,78 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
                     {showField("joinedOn") ? <Field id={`${titleId}-joined`} label="Eintritt" name="joinedOn" type="date" value={fields.joinedOn} onChange={(value) => setField("joinedOn", value)} /> : null}
                     <Field id={`${titleId}-family`} label="Name" name="familyName" value={fields.familyName} onChange={(value) => setField("familyName", value)} required />
                     <Field id={`${titleId}-given`} label="Vorname" name="givenName" value={fields.givenName} onChange={(value) => setField("givenName", value)} required />
-                    {showField("email") ? <Field id={`${titleId}-email`} label="E-Mail-Adresse" name="email" value={fields.email} onChange={(value) => setField("email", value)} /> : null}
+                    {showField("email") ? (
+                      <div className="col-12">
+                        <label className="form-label" htmlFor={`${titleId}-email`}>
+                          E-Mail-Adresse
+                        </label>
+                        <div className="d-flex flex-column flex-sm-row gap-2">
+                          <input
+                            id={`${titleId}-email`}
+                            className="form-control"
+                            name="email"
+                            type="email"
+                            value={fields.email}
+                            onChange={(event) => setField("email", event.target.value)}
+                          />
+                          {member?.draft ? (
+                            <button
+                              className="btn btn-outline-primary text-nowrap"
+                              type="button"
+                              onClick={() => setMailAsk("resend")}
+                            >
+                              E-Mail zur Bestätigung
+                            </button>
+                          ) : null}
+                        </div>
+                        {!member ? (
+                          <div className="form-text">
+                            Nach dem Speichern geht eine Bestätigungsmail an eine eingetragene Adresse. Bis zur Bestätigung bleibt das Mitglied ein Entwurf.
+                          </div>
+                        ) : null}
+                        {member?.confirmationNote ? (
+                          <div className="form-text text-warning">{member.confirmationNote}</div>
+                        ) : null}
+                        {mailAsk === "save" ? (
+                          <div className="alert alert-warning mt-2 mb-0" role="status">
+                            <p className="mb-2">
+                              Bestätigungsmail an {fields.email.trim()} senden? Das Mitglied bleibt Entwurf, bis die Adresse bestätigt ist.
+                            </p>
+                            <div className="d-flex flex-wrap gap-2">
+                              <button className="btn btn-outline-secondary btn-sm" type="button" onClick={() => setMailAsk("")}>
+                                Abbrechen
+                              </button>
+                              <button className="btn btn-primary btn-sm" type="submit">
+                                Senden
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                        {mailAsk === "resend" ? (
+                          <div className="alert alert-warning mt-2 mb-0" role="status">
+                            <p className="mb-2">Bestätigungsmail an {fields.email.trim()} erneut senden?</p>
+                            <div className="d-flex flex-wrap gap-2">
+                              <button className="btn btn-outline-secondary btn-sm" type="button" onClick={() => setMailAsk("")}>
+                                Abbrechen
+                              </button>
+                              <button
+                                className="btn btn-primary btn-sm"
+                                type="button"
+                                onClick={() => {
+                                  const formData = new FormData()
+                                  formData.set("memberId", String(member.id))
+                                  formData.set("email", fields.email)
+                                  formData.set("letter", letter)
+                                  return resendMemberConfirmation(formData)
+                                }}
+                              >
+                                Senden
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                     <div className="col-12">
                       <span className="form-label d-block">Beitrag pro Schuljahr</span>
                       <div className="d-flex flex-wrap gap-3">
@@ -183,7 +256,13 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
                   <button className="btn btn-outline-secondary" type="button" onClick={close}>
                     Abbrechen
                   </button>
-                  <button className="btn btn-primary" type="submit">
+                  <button
+                    className="btn btn-primary"
+                    type={asksForMail ? "button" : "submit"}
+                    onClick={() => {
+                      if (asksForMail) setMailAsk("save")
+                    }}
+                  >
                     Mitglied speichern
                   </button>
                 </div>

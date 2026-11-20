@@ -14,8 +14,8 @@ import { archivePeriod } from "../lib/archive"
 import { appendLog, sealApplication } from "../lib/seal"
 import { acceptReceipt, maxReceipts } from "../lib/receipts"
 import { canAdministerUsers, canEditMembers, ensureAccess, isJoinAccount } from "../lib/access"
-import { getMember, insertMember, markMemberDeleted, memberFromFields, preserveBankData, restoreMember as restoreMemberRecord, updateMember as replaceMember } from "../lib/members"
-import { confirmJoinRequest, submitJoinRequest } from "../lib/join"
+import { getMember, insertMember, markMemberDeleted, memberFromFields, preserveBankData, replaceDraftConfirmation, restoreMember as restoreMemberRecord, splitEmails, updateMember as replaceMember } from "../lib/members"
+import { confirmJoinRequest, sendConfirmationMail, submitJoinRequest } from "../lib/join"
 import { hashSecret } from "../lib/secret"
 
 async function boardActor() {
@@ -534,10 +534,11 @@ export async function updateUserAccess(formData) {
   revalidatePath("/", "layout")
 }
 
-function memberRedirect(letter, notice) {
+function memberRedirect(letter, notice, editId) {
   const params = new URLSearchParams()
   if (letter) params.set("buchstabe", letter)
   if (notice) params.set("hinweis", notice)
+  if (editId) params.set("bearbeiten", String(editId))
   const query = params.toString()
   return query ? `/mitglieder?${query}` : "/mitglieder"
 }
@@ -564,14 +565,57 @@ export async function saveMember(formData) {
   if (!canEditMembers(user)) redirect("/mitglieder")
   const data = memberFields(formData)
   if (!data) redirect(memberRedirect(letter, "mitglied"))
+  const addresses = splitEmails(data.email)
+  let notice = ""
   try {
-    await insertMember(user.id, data)
+    if (addresses.length === 0) {
+      await insertMember(user.id, data)
+    } else {
+      const token = randomBytes(32).toString("base64url")
+      const id = await insertMember(user.id, data, {
+        draft: true,
+        confirmHash: hashSecret(token),
+      })
+      const mailing = await sendConfirmationMail({
+        token,
+        addresses,
+        givenName: data.givenName,
+      })
+      if (mailing.note) {
+        await replaceDraftConfirmation(id, data, hashSecret(token), mailing.note)
+        notice = "zustellung"
+      }
+    }
   } catch {
     redirect(memberRedirect(letter, "schluessel"))
   }
   revalidatePath("/mitglieder")
   revalidatePath("/statistik")
-  redirect(memberRedirect(letter))
+  redirect(memberRedirect(letter, notice))
+}
+
+export async function resendMemberConfirmation(formData) {
+  const user = await boardActor()
+  const letter = String(formData.get("letter") ?? "")
+  const id = Number(formData.get("memberId"))
+  if (!canEditMembers(user) || !Number.isInteger(id) || id <= 0) redirect("/mitglieder")
+  const existing = await getMember(id)
+  if (!existing?.draft) redirect(memberRedirect(letter, "mitglied", id))
+  const email = String(formData.get("email") ?? "").trim()
+  const addresses = splitEmails(email)
+  if (addresses.length === 0 || addresses.some((part) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(part))) {
+    redirect(memberRedirect(letter, "mitglied", id))
+  }
+  const data = { ...existing, email }
+  delete data.id
+  delete data.draft
+  delete data.confirmationNote
+  const token = randomBytes(32).toString("base64url")
+  const mailing = await sendConfirmationMail({ token, addresses, givenName: data.givenName })
+  const saved = await replaceDraftConfirmation(id, data, hashSecret(token), mailing.note)
+  if (!saved) redirect(memberRedirect(letter, "mitglied"))
+  revalidatePath("/mitglieder")
+  redirect(memberRedirect(letter, mailing.note ? "zustellung" : "", id))
 }
 
 export async function updateMember(formData) {

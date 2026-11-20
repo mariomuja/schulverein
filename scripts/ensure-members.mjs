@@ -162,6 +162,24 @@ if (appRole && /^[A-Za-z_][A-Za-z0-9_]*$/.test(appRole)) {
   await db.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON join_nonces TO ${role}`)
 }
 
+await db.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMPTZ`)
+await db.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS confirm_hash TEXT`)
+await db.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS confirm_expires_at TIMESTAMPTZ`)
+await db.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS confirmation_note TEXT`)
+await db.query(
+  `CREATE UNIQUE INDEX IF NOT EXISTS members_confirm_hash ON members (confirm_hash) WHERE confirm_hash IS NOT NULL`,
+)
+await db.query(
+  `ALTER TABLE settings ADD COLUMN IF NOT EXISTS members_confirmed_backfill BOOLEAN NOT NULL DEFAULT FALSE`,
+)
+const backfill = await db.query(`SELECT members_confirmed_backfill FROM settings WHERE id = 1`)
+if (!backfill.rows[0]?.members_confirmed_backfill) {
+  await db.query(
+    `UPDATE members SET confirmed_at = COALESCE(created_at, NOW()) WHERE confirmed_at IS NULL`,
+  )
+  await db.query(`UPDATE settings SET members_confirmed_backfill = TRUE WHERE id = 1`)
+}
+
 if (process.env.DATABASE_URL) {
   const app = new pg.Client({
     connectionString: process.env.DATABASE_URL,

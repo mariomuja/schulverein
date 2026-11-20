@@ -52,6 +52,8 @@ function searchText(member) {
     entryDate(member.joinedOn),
     member.joinedOn,
     member.email,
+    member.draft ? "Entwurf" : "",
+    member.confirmationNote,
     amount,
     amount.replace(/\./g, ""),
   ].join(" ")
@@ -383,14 +385,22 @@ export default function MembersList({ members, deletedMembers = [], letter, canE
                     >
                       <div className="card-body member-card-body">
                         {canEdit ? <DeleteButton member={member} onAsk={setPendingDelete} /> : null}
-                        <h2 className="h6 mb-3">{person(member)}</h2>
+                        <h2 className="h6 mb-3">
+                          {person(member)}
+                          {member.draft ? <span className="badge text-bg-warning ms-2">Entwurf</span> : null}
+                        </h2>
                         <dl className="row mb-0 small">
                           <dt className="col-5">Nr.</dt>
                           <dd className="col-7">{member.memberNumber || "—"}</dd>
                           <dt className="col-5">Eintritt</dt>
                           <dd className="col-7">{entryDate(member.joinedOn)}</dd>
                           <dt className="col-5">E-Mail</dt>
-                          <dd className="col-7 text-break">{member.email || "—"}</dd>
+                          <dd className="col-7 text-break">
+                            {member.email || "—"}
+                            {member.confirmationNote ? (
+                              <div className="text-warning">{member.confirmationNote}</div>
+                            ) : null}
+                          </dd>
                           <dt className="col-5">Beitrag</dt>
                           <dd className="col-7 mb-0">
                             {member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}
@@ -460,9 +470,17 @@ export default function MembersList({ members, deletedMembers = [], letter, canE
                         }}
                       >
                         <td>{member.memberNumber || "—"}</td>
-                        <td className="fw-semibold">{person(member)}</td>
+                        <td className="fw-semibold">
+                          {person(member)}
+                          {member.draft ? <span className="badge text-bg-warning ms-2">Entwurf</span> : null}
+                        </td>
                         <td>{entryDate(member.joinedOn)}</td>
-                        <td>{member.email || "—"}</td>
+                        <td>
+                          {member.email || "—"}
+                          {member.confirmationNote ? (
+                            <div className="small text-warning">{member.confirmationNote}</div>
+                          ) : null}
+                        </td>
                         <td>{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</td>
                         {canEdit ? (
                           <td className="member-delete-col">
