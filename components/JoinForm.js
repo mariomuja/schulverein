@@ -283,15 +283,17 @@ export default function JoinForm({ ticket }) {
               </div>
             </div>
           </div>
-          <div className="col-12">
-            <label className="form-label" htmlFor={`${titleId}-holder`}>
-              Kontoinhaber
-            </label>
+          <div className="col-12 col-md-6">
+            <div className="d-flex align-items-center gap-2 mb-1 join-field-label">
+              <label className="form-label mb-0" htmlFor={`${titleId}-holder`}>
+                Kontoinhaber
+              </label>
+            </div>
             <input id={`${titleId}-holder`} className="form-control" name="accountHolder" maxLength={120} autoComplete="name" />
             <div className="form-text">Nur ausfüllen, wenn das Konto einer anderen Person gehört.</div>
           </div>
-          <div className="col-12">
-            <div className="d-flex align-items-center gap-2 mb-1">
+          <div className="col-12 col-md-6">
+            <div className="d-flex align-items-center gap-2 mb-1 join-field-label">
               <label className="form-label mb-0" htmlFor={`${titleId}-iban`}>
                 IBAN
               </label>
@@ -326,9 +328,11 @@ export default function JoinForm({ ticket }) {
             {ibanInvalid ? <div className="invalid-feedback d-block">{messages.iban}</div> : null}
           </div>
           <div className="col-12 col-md-6">
-            <label className="form-label" htmlFor={`${titleId}-bank`}>
-              Bank
-            </label>
+            <div className="d-flex align-items-center gap-2 mb-1 join-field-label">
+              <label className="form-label mb-0" htmlFor={`${titleId}-bank`}>
+                Bank
+              </label>
+            </div>
             <input
               id={`${titleId}-bank`}
               className="form-control join-readonly"
@@ -339,7 +343,7 @@ export default function JoinForm({ ticket }) {
             />
           </div>
           <div className="col-12 col-md-6">
-            <div className="d-flex align-items-center gap-2 mb-1">
+            <div className="d-flex align-items-center gap-2 mb-1 join-field-label">
               <label className="form-label mb-0" htmlFor={`${titleId}-bic`}>
                 BIC
               </label>

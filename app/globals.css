@@ -767,3 +767,7 @@ body.is-resizing-columns * {
 .form-control.join-readonly[readonly] {
   background-color: #e9ecef;
 }
+
+.join-field-label {
+  min-height: 1.5rem;
+}
