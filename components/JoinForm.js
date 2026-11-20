@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { usePathname, useRouter } from "next/navigation"
-import { lookupBank, lookupMemberName, submitJoin } from "../app/actions"
+import { lookupBank, lookupMemberEmail, lookupMemberName, submitJoin } from "../app/actions"
 import { germanIbanParts, validGermanIban } from "../lib/iban.mjs"
 import { parseEuroToCents } from "../lib/money"
 import { validEmail } from "../lib/patterns.mjs"
@@ -18,6 +18,7 @@ const messages = {
   mail: "Die Bestätigungsmail konnte nicht gesendet werden. Bitte versuche es später erneut.",
   rate: "Es wurden zu viele Anfragen gesendet. Bitte versuche es später erneut.",
   name: "Ein Mitglied mit diesem Vor- und Nachnamen ist bereits eingetragen. Die Angaben können nicht gesendet werden.",
+  emailused: "Diese E-Mail-Adresse ist bereits bei einem Mitglied hinterlegt. Die Angaben können nicht gesendet werden.",
 }
 
 function SubmitButton({ ready }) {
@@ -60,6 +61,7 @@ export default function JoinForm({ ticket }) {
   const titleId = useId()
   const lookupSeq = useRef(0)
   const nameSeq = useRef(0)
+  const emailSeq = useRef(0)
   const [ready, setReady] = useState(false)
   const [message, setMessage] = useState("")
   const [emailInvalid, setEmailInvalid] = useState(false)
@@ -70,6 +72,8 @@ export default function JoinForm({ ticket }) {
   const [familyName, setFamilyName] = useState("")
   const [nameState, setNameState] = useState({ key: "", taken: false })
   const [nameLooking, setNameLooking] = useState(false)
+  const [emailState, setEmailState] = useState({ key: "", taken: false })
+  const [emailLooking, setEmailLooking] = useState(false)
   const [email, setEmail] = useState("")
   const [amount, setAmount] = useState("")
   const [iban, setIban] = useState("")
@@ -89,6 +93,9 @@ export default function JoinForm({ ticket }) {
   const currentNameKey = nameKey(givenName, familyName)
   const nameTaken = nameState.taken && nameState.key === currentNameKey
   const namePending = Boolean(currentNameKey) && (nameLooking || nameState.key !== currentNameKey)
+  const currentEmailKey = emailKey(email)
+  const emailTaken = emailState.taken && emailState.key === currentEmailKey
+  const emailPending = Boolean(currentEmailKey) && (emailLooking || emailState.key !== currentEmailKey)
   const complete = givenName.trim() !== ""
     && familyName.trim() !== ""
     && validEmail(email)
@@ -99,6 +106,8 @@ export default function JoinForm({ ticket }) {
     && !looking
     && !nameTaken
     && !namePending
+    && !emailTaken
+    && !emailPending
 
   function nameKey(given, family) {
     const left = String(given ?? "").trim().replace(/\s+/g, " ").toLocaleLowerCase("de")
@@ -125,6 +134,33 @@ export default function JoinForm({ ticket }) {
       setNameState({ key, taken: false })
     } finally {
       if (seq === nameSeq.current) setNameLooking(false)
+    }
+  }
+
+  function emailKey(value) {
+    const address = String(value ?? "").trim().toLocaleLowerCase("de")
+    if (!validEmail(address)) return ""
+    return address
+  }
+
+  async function reviewEmail(value) {
+    const key = emailKey(value)
+    if (!key) {
+      setEmailState({ key: "", taken: false })
+      setEmailLooking(false)
+      return
+    }
+    const seq = ++emailSeq.current
+    setEmailLooking(true)
+    try {
+      const taken = await lookupMemberEmail(value)
+      if (seq !== emailSeq.current) return
+      setEmailState({ key, taken: taken === true })
+    } catch {
+      if (seq !== emailSeq.current) return
+      setEmailState({ key, taken: false })
+    } finally {
+      if (seq === emailSeq.current) setEmailLooking(false)
     }
   }
 
@@ -174,9 +210,10 @@ export default function JoinForm({ ticket }) {
   }
 
   function guard(event) {
-    if (nameTaken || namePending) {
+    if (nameTaken || namePending || emailTaken || emailPending) {
       event.preventDefault()
       if (nameTaken) setMessage(messages.name)
+      else if (emailTaken) setMessage(messages.emailused)
       return
     }
     const problem = checkFields(new FormData(event.currentTarget))
@@ -189,6 +226,10 @@ export default function JoinForm({ ticket }) {
     setMessage("")
     if (nameTaken) {
       setMessage(messages.name)
+      return
+    }
+    if (emailTaken) {
+      setMessage(messages.emailused)
       return
     }
     const problem = checkFields(formData)
@@ -206,6 +247,7 @@ export default function JoinForm({ ticket }) {
     if (result?.error === "iban") setIbanInvalid(true)
     if (result?.error === "bank") setBankMissing(true)
     if (result?.error === "name") setNameState({ key: nameKey(givenName, familyName), taken: true })
+    if (result?.error === "emailused") setEmailState({ key: emailKey(email), taken: true })
     setMessage(messages[result?.error] ?? messages.angaben)
   }
 
@@ -281,7 +323,7 @@ export default function JoinForm({ ticket }) {
             </label>
             <input
               id={`${titleId}-email`}
-              className={`form-control${emailInvalid ? " is-invalid" : ""}`}
+              className={`form-control${emailInvalid || emailTaken ? " is-invalid" : ""}`}
               name="email"
               type="email"
               required
@@ -290,19 +332,28 @@ export default function JoinForm({ ticket }) {
               autoCapitalize="none"
               spellCheck={false}
               inputMode="email"
-              aria-invalid={emailInvalid}
-              aria-describedby={`${titleId}-email-hint`}
+              aria-invalid={emailInvalid || emailTaken}
+              aria-describedby={emailTaken ? `${titleId}-email-taken` : `${titleId}-email-hint`}
               value={email}
               onChange={(event) => {
                 setEmail(event.target.value)
                 setEmailInvalid(false)
+                setEmailState({ key: "", taken: false })
               }}
-              onBlur={(event) => setEmailInvalid(event.target.value.trim() !== "" && !validEmail(event.target.value))}
+              onBlur={(event) => {
+                setEmailInvalid(event.target.value.trim() !== "" && !validEmail(event.target.value))
+                reviewEmail(event.target.value)
+              }}
             />
             <div className="form-text" id={`${titleId}-email-hint`}>
               An diese Adresse schicken wir den Link zur Bestätigung.
             </div>
             {emailInvalid ? <div className="invalid-feedback d-block">{messages.email}</div> : null}
+            {emailTaken ? (
+              <div className="alert alert-warning mt-2 mb-0" id={`${titleId}-email-taken`} role="alert">
+                {messages.emailused}
+              </div>
+            ) : null}
           </div>
           <div className="col-12">
             <span className="form-label d-block">Beitrag pro Schuljahr</span>

@@ -14,7 +14,7 @@ import { archivePeriod } from "../lib/archive"
 import { appendLog, sealApplication } from "../lib/seal"
 import { acceptReceipt, maxReceipts } from "../lib/receipts"
 import { canAdministerUsers, canEditMembers, canReadMembers, ensureAccess, isJoinAccount } from "../lib/access"
-import { getMember, insertMember, markMemberDeleted, memberFromFields, memberNameExists, preserveBankData, replaceDraftConfirmation, restoreMember as restoreMemberRecord, splitEmails, updateMember as replaceMember } from "../lib/members"
+import { getMember, insertMember, markMemberDeleted, memberEmailExists, memberFromFields, memberNameExists, preserveBankData, replaceDraftConfirmation, restoreMember as restoreMemberRecord, splitEmails, updateMember as replaceMember } from "../lib/members"
 import { confirmJoinRequest, sendConfirmationMail, submitJoinRequest } from "../lib/join"
 import { findBankByBlz } from "../lib/banks.mjs"
 import { createLoginSession } from "../lib/login"
@@ -784,6 +784,12 @@ export async function lookupMemberName(givenName, familyName) {
   const user = await getUser()
   if (!isJoinAccount(user)) return false
   return memberNameExists(givenName, familyName)
+}
+
+export async function lookupMemberEmail(email) {
+  const user = await getUser()
+  if (!isJoinAccount(user)) return false
+  return memberEmailExists(email)
 }
 
 export async function lookupBank(blz) {
