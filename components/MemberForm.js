@@ -118,7 +118,7 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
               <form action={member ? updateMember : saveMember} className="modal-content">
                 <div className="modal-header">
                   <h2 className="modal-title h5" id={titleId}>
-                    {member ? "Mitglied ändern" : "Mitglied hinzufügen"}
+                    {member ? "Mitglied ändern" : "Neues Mitglied"}
                   </h2>
                   <button className="btn-close" type="button" aria-label="Schließen" onClick={close} />
                 </div>
@@ -191,7 +191,7 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
   return (
     <>
       <button className="btn btn-sm btn-primary" type="button" onClick={() => setOpen(true)}>
-        Mitglied hinzufügen
+        Neues Mitglied
       </button>
       {dialog}
     </>
