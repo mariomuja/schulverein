@@ -331,7 +331,7 @@ export default function JoinForm({ ticket }) {
             </label>
             <input
               id={`${titleId}-bank`}
-              className="form-control"
+              className="form-control join-readonly"
               name="bankName"
               value={bank?.name ?? ""}
               readOnly
@@ -350,7 +350,7 @@ export default function JoinForm({ ticket }) {
             </div>
             <input
               id={`${titleId}-bic`}
-              className="form-control"
+              className="form-control join-readonly"
               name="bic"
               value={bank?.bic ?? ""}
               readOnly

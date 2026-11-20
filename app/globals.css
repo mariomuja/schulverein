@@ -763,3 +763,7 @@ body.is-resizing-columns * {
 .join-help.is-open .join-help-bubble {
   display: block;
 }
+
+.form-control.join-readonly[readonly] {
+  background-color: #e9ecef;
+}
