@@ -1,9 +1,13 @@
-import Link from "next/link"
-import DeleteMemberButton from "./DeleteMemberButton"
+"use client"
+
+import { useRouter } from "next/navigation"
 import { formatEuro } from "../lib/money"
 
-function memberHref(letter) {
-  return letter ? `/mitglieder?buchstabe=${letter}` : "/mitglieder"
+function editHref(letter, id) {
+  const params = new URLSearchParams()
+  if (letter) params.set("buchstabe", letter)
+  params.set("bearbeiten", String(id))
+  return `/mitglieder?${params}`
 }
 
 function address(member) {
@@ -23,7 +27,14 @@ function person(member) {
   return [member.familyName, member.givenName].filter(Boolean).join(", ")
 }
 
+function openEdit(event, router, href) {
+  if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return
+  if (event.key === " ") event.preventDefault()
+  router.push(href)
+}
+
 export default function MembersList({ members, letter }) {
+  const router = useRouter()
   if (members.length === 0) {
     return <p className="text-secondary mb-0">Keine Mitglieder für diesen Anfangsbuchstaben.</p>
   }
@@ -32,43 +43,52 @@ export default function MembersList({ members, letter }) {
     <>
       <div className="d-xl-none">
         <div className="row g-3">
-          {members.map((member) => (
-            <div className="col-12 col-md-6" key={member.id}>
-              <article className="card h-100">
-                <div className="card-body">
-                  <h2 className="h6 mb-3">
-                    {person(member)}
-                    {member.memberNumber ? <span className="fw-normal text-secondary"> · Nr. {member.memberNumber}</span> : null}
-                  </h2>
-                  <dl className="row mb-3 small">
-                    <dt className="col-5">Eintritt</dt>
-                    <dd className="col-7">{entryDate(member.joinedOn)}</dd>
-                    <dt className="col-5">Adresse</dt>
-                    <dd className="col-7">{address(member) || "—"}</dd>
-                    <dt className="col-5">E-Mail</dt>
-                    <dd className="col-7 text-break">{member.email || "—"}</dd>
-                    <dt className="col-5">Beitrag</dt>
-                    <dd className="col-7">{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</dd>
-                    <dt className="col-5">Bank</dt>
-                    <dd className="col-7">
-                      {member.bankName || member.bic || "—"}
-                      {member.accountHolder ? <div className="text-secondary">{member.accountHolder}</div> : null}
-                    </dd>
-                  </dl>
-                  <div className="d-flex flex-wrap gap-2">
-                    <Link className="btn btn-sm btn-outline-secondary" href={`${memberHref(letter)}${letter ? "&" : "?"}bearbeiten=${member.id}`}>
-                      Ändern
-                    </Link>
-                    <DeleteMemberButton id={member.id} letter={letter} />
+          {members.map((member) => {
+            const href = editHref(letter, member.id)
+            return (
+              <div className="col-12 col-md-6" key={member.id}>
+                <article
+                  className="card h-100 member-row"
+                  role="button"
+                  tabIndex={member.unreadable ? -1 : 0}
+                  aria-label={`${person(member)} ändern`}
+                  aria-disabled={member.unreadable || undefined}
+                  onClick={(event) => {
+                    if (!member.unreadable) openEdit(event, router, href)
+                  }}
+                  onKeyDown={(event) => {
+                    if (!member.unreadable) openEdit(event, router, href)
+                  }}
+                >
+                  <div className="card-body">
+                    <h2 className="h6 mb-3">
+                      {person(member)}
+                      {member.memberNumber ? <span className="fw-normal text-secondary"> · Nr. {member.memberNumber}</span> : null}
+                    </h2>
+                    <dl className="row mb-0 small">
+                      <dt className="col-5">Eintritt</dt>
+                      <dd className="col-7">{entryDate(member.joinedOn)}</dd>
+                      <dt className="col-5">Adresse</dt>
+                      <dd className="col-7">{address(member) || "—"}</dd>
+                      <dt className="col-5">E-Mail</dt>
+                      <dd className="col-7 text-break">{member.email || "—"}</dd>
+                      <dt className="col-5">Beitrag</dt>
+                      <dd className="col-7">{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</dd>
+                      <dt className="col-5">Bank</dt>
+                      <dd className="col-7 mb-0">
+                        {member.bankName || member.bic || "—"}
+                        {member.accountHolder ? <div className="text-secondary">{member.accountHolder}</div> : null}
+                      </dd>
+                    </dl>
                   </div>
-                </div>
-              </article>
-            </div>
-          ))}
+                </article>
+              </div>
+            )
+          })}
         </div>
       </div>
       <div className="d-none d-xl-block table-responsive">
-        <table className="table table-striped align-middle bg-white">
+        <table className="table table-striped table-hover align-middle bg-white member-table">
           <thead>
             <tr>
               <th>Name</th>
@@ -77,34 +97,41 @@ export default function MembersList({ members, letter }) {
               <th>E-Mail</th>
               <th>Beitrag</th>
               <th>Bank</th>
-              <th><span className="visually-hidden">Aktionen</span></th>
             </tr>
           </thead>
           <tbody>
-            {members.map((member) => (
-              <tr key={member.id}>
-                <td>
-                  <div className="fw-semibold">{person(member)}</div>
-                  {member.memberNumber ? <div className="small text-secondary">Nr. {member.memberNumber}</div> : null}
-                </td>
-                <td>{entryDate(member.joinedOn)}</td>
-                <td>{address(member) || "—"}</td>
-                <td className="text-break">{member.email || "—"}</td>
-                <td>{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</td>
-                <td>
-                  <div>{member.bankName || member.bic || "—"}</div>
-                  <div className="small text-secondary">{member.accountHolder}</div>
-                </td>
-                <td>
-                  <div className="d-flex flex-wrap gap-2">
-                    <Link className="btn btn-sm btn-outline-secondary" href={`${memberHref(letter)}${letter ? "&" : "?"}bearbeiten=${member.id}`}>
-                      Ändern
-                    </Link>
-                    <DeleteMemberButton id={member.id} letter={letter} />
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {members.map((member) => {
+              const href = editHref(letter, member.id)
+              return (
+                <tr
+                  key={member.id}
+                  className="member-row"
+                  role="button"
+                  tabIndex={member.unreadable ? -1 : 0}
+                  aria-label={`${person(member)} ändern`}
+                  aria-disabled={member.unreadable || undefined}
+                  onClick={(event) => {
+                    if (!member.unreadable) openEdit(event, router, href)
+                  }}
+                  onKeyDown={(event) => {
+                    if (!member.unreadable) openEdit(event, router, href)
+                  }}
+                >
+                  <td>
+                    <div className="fw-semibold">{person(member)}</div>
+                    {member.memberNumber ? <div className="small text-secondary">Nr. {member.memberNumber}</div> : null}
+                  </td>
+                  <td>{entryDate(member.joinedOn)}</td>
+                  <td>{address(member) || "—"}</td>
+                  <td className="text-break">{member.email || "—"}</td>
+                  <td>{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</td>
+                  <td>
+                    <div>{member.bankName || member.bic || "—"}</div>
+                    <div className="small text-secondary">{member.accountHolder}</div>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
