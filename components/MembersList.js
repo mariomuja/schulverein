@@ -12,7 +12,6 @@ const columns = [
   { key: "joined", label: "Eintritt", className: "col-joined" },
   { key: "email", label: "E-Mail", className: "col-email" },
   { key: "contribution", label: "Beitrag", className: "col-contribution" },
-  { key: "bic", label: "BIC", className: "col-bic" },
 ]
 
 const storageKey = "schulverein-member-column-widths"
@@ -55,7 +54,6 @@ function searchText(member) {
     member.email,
     amount,
     amount.replace(/\./g, ""),
-    member.bicStored ? "••••" : "",
   ].join(" ")
 }
 
@@ -82,8 +80,6 @@ function compareRows(left, right, sort) {
     result = fold(left.email).localeCompare(fold(right.email), "de")
   } else if (sort.key === "contribution") {
     result = (left.contributionCents ?? 0) - (right.contributionCents ?? 0)
-  } else if (sort.key === "bic") {
-    result = Number(Boolean(left.bicStored)) - Number(Boolean(right.bicStored))
   } else {
     result = fold(left.familyName).localeCompare(fold(right.familyName), "de")
     if (!result) result = fold(left.givenName).localeCompare(fold(right.givenName), "de")
@@ -349,11 +345,9 @@ export default function MembersList({ members, letter }) {
                           <dt className="col-5">E-Mail</dt>
                           <dd className="col-7 text-break">{member.email || "—"}</dd>
                           <dt className="col-5">Beitrag</dt>
-                          <dd className="col-7">
+                          <dd className="col-7 mb-0">
                             {member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}
                           </dd>
-                          <dt className="col-5">BIC</dt>
-                          <dd className="col-7 mb-0">{member.bicStored ? "••••" : "—"}</dd>
                         </dl>
                       </div>
                     </article>
@@ -426,7 +420,6 @@ export default function MembersList({ members, letter }) {
                         <td>{entryDate(member.joinedOn)}</td>
                         <td>{member.email || "—"}</td>
                         <td>{member.contributionCents ? `${formatEuro(member.contributionCents)} €` : "—"}</td>
-                        <td>{member.bicStored ? "••••" : "—"}</td>
                       </tr>
                     )
                   })}

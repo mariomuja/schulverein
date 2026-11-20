@@ -61,23 +61,19 @@ body {
 }
 
 .member-table col.col-name {
-  width: 24%;
+  width: 26%;
 }
 
 .member-table col.col-joined {
-  width: 14%;
+  width: 15%;
 }
 
 .member-table col.col-email {
-  width: 30%;
+  width: 34%;
 }
 
 .member-table col.col-contribution {
-  width: 12%;
-}
-
-.member-table col.col-bic {
-  width: 10%;
+  width: 15%;
 }
 
 .member-card-body {
