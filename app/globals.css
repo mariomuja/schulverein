@@ -11,6 +11,69 @@ body {
 
 .member-table {
   --bs-table-hover-bg: #f4f9ff;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.member-table thead th {
+  --bs-table-bg: #0a3d7a;
+  --bs-table-color: #fff;
+  --bs-table-accent-bg: #0a3d7a;
+  background-color: #0a3d7a;
+  color: #fff;
+  border-color: #08325f;
+  box-shadow: inset 0 0 0 9999px #0a3d7a;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.member-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.member-sort:hover,
+.member-sort:focus-visible {
+  color: #fff;
+}
+
+.member-sort-label {
+  white-space: nowrap;
+}
+
+.member-table td {
+  overflow-wrap: anywhere;
+}
+
+.member-table col.col-name {
+  width: 28%;
+}
+
+.member-table col.col-joined {
+  width: 16%;
+}
+
+.member-table col.col-email {
+  width: 32%;
+}
+
+.member-table col.col-contribution {
+  width: 14%;
+}
+
+.member-table col.col-bic {
+  width: 10%;
 }
 
 .member-row {
