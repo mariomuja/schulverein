@@ -532,6 +532,14 @@ body.is-resizing-columns * {
   min-height: 44px;
 }
 
+.token-link-backdrop {
+  z-index: 1060;
+}
+
+.token-link-modal {
+  z-index: 1065;
+}
+
 .user-admin-btn {
   display: flex;
   flex-direction: column;

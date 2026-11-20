@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useId, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { useSearchParams } from "next/navigation"
 import { addUser, deactivateUserToken, removeUser, renewUserToken, updateUserAccess } from "../app/actions"
 import { givenName } from "../lib/names"
@@ -16,9 +17,12 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
   const hint = params.get("hinweis")
   const message = hints[hint] ?? ""
   const titleId = useId()
+  const issuedTitleId = useId()
   const dialogRef = useRef(null)
+  const issuedDialogRef = useRef(null)
   const addFormRef = useRef(null)
   const [open, setOpen] = useState(Boolean(message))
+  const [mounted, setMounted] = useState(false)
   const [issued, setIssued] = useState(null)
 
   function close() {
@@ -27,17 +31,26 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
   }
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
     if (message) setOpen(true)
   }, [message])
 
   useEffect(() => {
     if (!open) return undefined
-    const dialog = dialogRef.current
-    dialog?.focus()
+    if (issued?.loginUrl) issuedDialogRef.current?.focus()
+    else dialogRef.current?.focus()
     document.body.classList.add("modal-open")
 
     function onKeyDown(event) {
-      if (event.key === "Escape") close()
+      if (event.key !== "Escape") return
+      if (issued?.loginUrl) {
+        setIssued(null)
+        return
+      }
+      close()
     }
 
     document.addEventListener("keydown", onKeyDown)
@@ -45,7 +58,7 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
       document.body.classList.remove("modal-open")
       document.removeEventListener("keydown", onKeyDown)
     }
-  }, [open])
+  }, [open, issued])
 
   return (
     <>
@@ -121,15 +134,6 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
                   {message ? (
                     <div className="alert alert-warning" role="status">
                       {message}
-                    </div>
-                  ) : null}
-                  {issued?.loginUrl ? (
-                    <div className="alert alert-info" role="status">
-                      <p className="mb-2">
-                        Anmeldelink für {givenName(issued.name)}. Er wird nur dieses eine Mal angezeigt.
-                      </p>
-                      <p className="font-monospace small text-break mb-2">{issued.loginUrl}</p>
-                      <CopyTokenButton url={issued.loginUrl} />
                     </div>
                   ) : null}
                   <ul className="list-group list-group-flush mb-3">
@@ -299,6 +303,46 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
           </div>
         </>
       ) : null}
+      {mounted && issued?.loginUrl
+        ? createPortal(
+            <>
+              <div className="modal-backdrop fade show token-link-backdrop" onClick={() => setIssued(null)} />
+              <div className="modal fade show d-block token-link-modal" role="presentation" onClick={() => setIssued(null)}>
+                <div
+                  ref={issuedDialogRef}
+                  className="modal-dialog modal-dialog-centered"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby={issuedTitleId}
+                  tabIndex={-1}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="modal-content">
+                    <div className="modal-header">
+                      <h2 className="modal-title h5" id={issuedTitleId}>
+                        Neuer Anmeldelink
+                      </h2>
+                      <button className="btn-close" type="button" aria-label="Schließen" onClick={() => setIssued(null)} />
+                    </div>
+                    <div className="modal-body">
+                      <p className="mb-2">
+                        Anmeldelink für {givenName(issued.name)}. Er wird nur dieses eine Mal angezeigt.
+                      </p>
+                      <p className="font-monospace small text-break mb-0">{issued.loginUrl}</p>
+                    </div>
+                    <div className="modal-footer">
+                      <CopyTokenButton url={issued.loginUrl} />
+                      <button className="btn btn-outline-secondary" type="button" onClick={() => setIssued(null)}>
+                        Schließen
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
     </>
   )
 }
