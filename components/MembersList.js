@@ -323,36 +323,32 @@ export default function MembersList({ members, deletedMembers = [], letter }) {
           autoComplete="off"
         />
       </div>
-      <div className="row g-2 align-items-end mb-3">
-        <div className="col-12 col-md-6 col-xl-4">
-          <label className="form-label small mb-1" htmlFor="deleted-members">
-            Gelöschte Mitglieder
-          </label>
-          <select
-            id="deleted-members"
-            className="form-select form-select-sm"
-            value={deletedMembers.some((member) => String(member.id) === selectedDeleted) ? selectedDeleted : ""}
-            onChange={(event) => setSelectedDeleted(event.target.value)}
-            disabled={deletedMembers.length === 0}
-          >
-            <option value="">{deletedMembers.length === 0 ? "Keine gelöschten Mitglieder" : "Bitte wählen"}</option>
-            {deletedMembers.map((member) => (
-              <option key={member.id} value={member.id}>
-                {deletedLabel(member)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="col-12 col-md-auto">
-          <button
-            className="btn btn-outline-primary btn-sm"
-            type="button"
-            disabled={!chosenDeleted}
-            onClick={() => setPendingRestore(chosenDeleted)}
-          >
-            Löschen rückgängig
-          </button>
-        </div>
+      <div className="d-flex flex-column flex-xl-row align-items-xl-center gap-2 mb-3">
+        <label className="form-label small mb-0 text-nowrap" htmlFor="deleted-members">
+          Gelöschte Mitglieder
+        </label>
+        <select
+          id="deleted-members"
+          className="form-select form-select-sm deleted-members-select"
+          value={deletedMembers.some((member) => String(member.id) === selectedDeleted) ? selectedDeleted : ""}
+          onChange={(event) => setSelectedDeleted(event.target.value)}
+          disabled={deletedMembers.length === 0}
+        >
+          <option value="">{deletedMembers.length === 0 ? "Keine gelöschten Mitglieder" : "Bitte wählen"}</option>
+          {deletedMembers.map((member) => (
+            <option key={member.id} value={member.id}>
+              {deletedLabel(member)}
+            </option>
+          ))}
+        </select>
+        <button
+          className="btn btn-outline-primary btn-sm text-nowrap"
+          type="button"
+          disabled={!chosenDeleted}
+          onClick={() => setPendingRestore(chosenDeleted)}
+        >
+          Löschen rückgängig
+        </button>
       </div>
       {rows.length === 0 ? (
         <p className="text-secondary mb-0">

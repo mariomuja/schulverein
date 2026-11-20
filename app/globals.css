@@ -60,8 +60,13 @@ body {
   width: 100%;
 }
 
+.deleted-members-select {
+  width: 100%;
+}
+
 @media (min-width: 1200px) {
-  .member-search {
+  .member-search,
+  .deleted-members-select {
     width: 18rem;
   }
 }
