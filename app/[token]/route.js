@@ -19,7 +19,12 @@ export async function GET(request, context) {
 
   const sessionId = randomBytes(32).toString("base64url")
   const counted = await query(
-    `UPDATE users SET login_count = login_count + 1 WHERE id = $1 RETURNING login_count`,
+    `UPDATE users AS account
+     SET login_count = account.login_count + 1,
+         token_hint_pending = FALSE
+     FROM (SELECT id, token_hint_pending FROM users WHERE id = $1) AS previous
+     WHERE account.id = previous.id
+     RETURNING account.login_count, previous.token_hint_pending`,
     [user.id],
   )
   await query(
@@ -38,7 +43,9 @@ export async function GET(request, context) {
     path: "/",
     maxAge: 60 * 60 * 24 * sessionDays,
   })
-  if (Number(counted.rows[0]?.login_count) % 10 === 0) {
+  const loginCount = Number(counted.rows[0]?.login_count)
+  const showTokenHint = counted.rows[0]?.token_hint_pending === true || loginCount % 10 === 0
+  if (showTokenHint) {
     response.cookies.set("sv_token_hint", "1", {
       httpOnly: false,
       sameSite: "lax",
