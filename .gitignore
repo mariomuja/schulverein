@@ -4,3 +4,4 @@ node_modules
 .env*.local
 tokens.local.txt
 .vercel
+.neon
