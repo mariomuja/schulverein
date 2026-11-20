@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { usePathname, useRouter } from "next/navigation"
-import { lookupBank, submitJoin } from "../app/actions"
+import { lookupBank, lookupMemberName, submitJoin } from "../app/actions"
 import { germanIbanParts, validGermanIban } from "../lib/iban.mjs"
 import { parseEuroToCents } from "../lib/money"
 import { validEmail } from "../lib/patterns.mjs"
@@ -17,6 +17,7 @@ const messages = {
   alt: "Das Formular war zu lange offen. Bitte lade die Seite neu.",
   mail: "Die Bestätigungsmail konnte nicht gesendet werden. Bitte versuche es später erneut.",
   rate: "Es wurden zu viele Anfragen gesendet. Bitte versuche es später erneut.",
+  name: "Ein Mitglied mit diesem Vor- und Nachnamen ist bereits eingetragen. Die Angaben können nicht gesendet werden.",
 }
 
 function SubmitButton({ ready }) {
@@ -58,6 +59,7 @@ export default function JoinForm({ ticket }) {
   const router = useRouter()
   const titleId = useId()
   const lookupSeq = useRef(0)
+  const nameSeq = useRef(0)
   const [ready, setReady] = useState(false)
   const [message, setMessage] = useState("")
   const [emailInvalid, setEmailInvalid] = useState(false)
@@ -66,6 +68,8 @@ export default function JoinForm({ ticket }) {
   const [looking, setLooking] = useState(false)
   const [givenName, setGivenName] = useState("")
   const [familyName, setFamilyName] = useState("")
+  const [nameState, setNameState] = useState({ key: "", taken: false })
+  const [nameLooking, setNameLooking] = useState(false)
   const [email, setEmail] = useState("")
   const [amount, setAmount] = useState("")
   const [iban, setIban] = useState("")
@@ -82,6 +86,9 @@ export default function JoinForm({ ticket }) {
   }, [ticket])
 
   const contributionOk = choice === "22" || (choice === "custom" && parseEuroToCents(amount) != null && parseEuroToCents(amount) <= 100000)
+  const currentNameKey = nameKey(givenName, familyName)
+  const nameTaken = nameState.taken && nameState.key === currentNameKey
+  const namePending = Boolean(currentNameKey) && (nameLooking || nameState.key !== currentNameKey)
   const complete = givenName.trim() !== ""
     && familyName.trim() !== ""
     && validEmail(email)
@@ -90,6 +97,36 @@ export default function JoinForm({ ticket }) {
     && Boolean(bank?.bic)
     && Boolean(bank?.name)
     && !looking
+    && !nameTaken
+    && !namePending
+
+  function nameKey(given, family) {
+    const left = String(given ?? "").trim().replace(/\s+/g, " ").toLocaleLowerCase("de")
+    const right = String(family ?? "").trim().replace(/\s+/g, " ").toLocaleLowerCase("de")
+    if (!left || !right) return ""
+    return `${left}\n${right}`
+  }
+
+  async function reviewName(given, family) {
+    const key = nameKey(given, family)
+    if (!key) {
+      setNameState({ key: "", taken: false })
+      setNameLooking(false)
+      return
+    }
+    const seq = ++nameSeq.current
+    setNameLooking(true)
+    try {
+      const taken = await lookupMemberName(given, family)
+      if (seq !== nameSeq.current) return
+      setNameState({ key, taken: taken === true })
+    } catch {
+      if (seq !== nameSeq.current) return
+      setNameState({ key, taken: false })
+    } finally {
+      if (seq === nameSeq.current) setNameLooking(false)
+    }
+  }
 
   async function resolveBank(value) {
     const seq = ++lookupSeq.current
@@ -130,7 +167,18 @@ export default function JoinForm({ ticket }) {
     return messages.bank
   }
 
+  function blurNames() {
+    const given = document.getElementById(`${titleId}-given`)?.value ?? ""
+    const family = document.getElementById(`${titleId}-family`)?.value ?? ""
+    reviewName(given, family)
+  }
+
   function guard(event) {
+    if (nameTaken || namePending) {
+      event.preventDefault()
+      if (nameTaken) setMessage(messages.name)
+      return
+    }
     const problem = checkFields(new FormData(event.currentTarget))
     if (!problem) return
     event.preventDefault()
@@ -139,6 +187,10 @@ export default function JoinForm({ ticket }) {
 
   async function send(formData) {
     setMessage("")
+    if (nameTaken) {
+      setMessage(messages.name)
+      return
+    }
     const problem = checkFields(formData)
     if (problem) {
       setMessage(problem)
@@ -153,6 +205,7 @@ export default function JoinForm({ ticket }) {
     if (result?.error === "email") setEmailInvalid(true)
     if (result?.error === "iban") setIbanInvalid(true)
     if (result?.error === "bank") setBankMissing(true)
+    if (result?.error === "name") setNameState({ key: nameKey(givenName, familyName), taken: true })
     setMessage(messages[result?.error] ?? messages.angaben)
   }
 
@@ -179,13 +232,19 @@ export default function JoinForm({ ticket }) {
             </label>
             <input
               id={`${titleId}-given`}
-              className="form-control"
+              className={`form-control${nameTaken ? " is-invalid" : ""}`}
               name="givenName"
               required
               maxLength={80}
               autoComplete="given-name"
               value={givenName}
-              onChange={(event) => setGivenName(event.target.value)}
+              aria-invalid={nameTaken || undefined}
+              aria-describedby={nameTaken ? `${titleId}-name-taken` : undefined}
+              onChange={(event) => {
+                setGivenName(event.target.value)
+                setNameState({ key: "", taken: false })
+              }}
+              onBlur={blurNames}
             />
           </div>
           <div className="col-12 col-md-6">
@@ -194,15 +253,28 @@ export default function JoinForm({ ticket }) {
             </label>
             <input
               id={`${titleId}-family`}
-              className="form-control"
+              className={`form-control${nameTaken ? " is-invalid" : ""}`}
               name="familyName"
               required
               maxLength={80}
               autoComplete="family-name"
               value={familyName}
-              onChange={(event) => setFamilyName(event.target.value)}
+              aria-invalid={nameTaken || undefined}
+              aria-describedby={nameTaken ? `${titleId}-name-taken` : undefined}
+              onChange={(event) => {
+                setFamilyName(event.target.value)
+                setNameState({ key: "", taken: false })
+              }}
+              onBlur={blurNames}
             />
           </div>
+          {nameTaken ? (
+            <div className="col-12">
+              <div className="alert alert-warning mb-0" id={`${titleId}-name-taken`} role="alert">
+                {messages.name}
+              </div>
+            </div>
+          ) : null}
           <div className="col-12">
             <label className="form-label" htmlFor={`${titleId}-email`}>
               E-Mail-Adresse
