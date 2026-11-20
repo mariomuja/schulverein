@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react"
 import { createPortal } from "react-dom"
+import { useRouter } from "next/navigation"
 import { saveMember, updateMember } from "../app/actions"
 import { formatEuro } from "../lib/money"
 
@@ -65,6 +66,7 @@ function fromMember(member) {
 
 export default function MemberForm({ member = null, letter = "", startOpen = false }) {
   const titleId = useId()
+  const router = useRouter()
   const [open, setOpen] = useState(Boolean(member) || startOpen)
   const [mounted, setMounted] = useState(false)
   const [fields, setFields] = useState(() => fromMember(member))
@@ -73,11 +75,21 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
     setMounted(true)
   }, [])
 
+  function close() {
+    setOpen(false)
+    if (!member) return
+    const params = new URLSearchParams(window.location.search)
+    if (!params.has("bearbeiten")) return
+    params.delete("bearbeiten")
+    const query = params.toString()
+    router.replace(query ? `/mitglieder?${query}` : "/mitglieder", { scroll: false })
+  }
+
   useEffect(() => {
     if (!open) return undefined
     document.body.classList.add("modal-open")
     function onKeyDown(event) {
-      if (event.key === "Escape") setOpen(false)
+      if (event.key === "Escape") close()
     }
     document.addEventListener("keydown", onKeyDown)
     return () => {
@@ -94,8 +106,8 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
     open && mounted
       ? createPortal(
         <>
-          <div className="modal-backdrop fade show" onClick={() => setOpen(false)} />
-          <div className="modal fade show d-block" role="presentation" onClick={() => setOpen(false)}>
+          <div className="modal-backdrop fade show" onClick={close} />
+          <div className="modal fade show d-block" role="presentation" onClick={close}>
             <div
               className="modal-dialog modal-lg modal-dialog-scrollable"
               role="dialog"
@@ -108,7 +120,7 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
                   <h2 className="modal-title h5" id={titleId}>
                     {member ? "Mitglied ändern" : "Mitglied hinzufügen"}
                   </h2>
-                  <button className="btn-close" type="button" aria-label="Schließen" onClick={() => setOpen(false)} />
+                  <button className="btn-close" type="button" aria-label="Schließen" onClick={close} />
                 </div>
                 <div className="modal-body">
                   <div className="row g-3">
@@ -159,7 +171,7 @@ export default function MemberForm({ member = null, letter = "", startOpen = fal
                   </div>
                 </div>
                 <div className="modal-footer">
-                  <button className="btn btn-outline-secondary" type="button" onClick={() => setOpen(false)}>
+                  <button className="btn btn-outline-secondary" type="button" onClick={close}>
                     Abbrechen
                   </button>
                   <button className="btn btn-primary" type="submit">

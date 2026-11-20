@@ -97,7 +97,7 @@ export default async function MembersPage({ searchParams }) {
             ))}
           </nav>
           <MembersList members={shown} letter={letter} />
-          {editing ? <MemberForm member={editing} letter={letter} /> : null}
+          {editing ? <MemberForm key={editing.id} member={editing} letter={letter} /> : null}
         </>
       ) : (
         <p className="mb-0">Der Schulverein hat derzeit {count} {count === 1 ? "Mitglied" : "Mitglieder"}.</p>

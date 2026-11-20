@@ -24,7 +24,7 @@ function person(member) {
 function openEdit(event, router, href) {
   if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return
   if (event.key === " ") event.preventDefault()
-  router.push(href)
+  router.push(href, { scroll: false })
 }
 
 export default function MembersList({ members, letter }) {
