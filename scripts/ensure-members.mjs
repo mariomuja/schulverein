@@ -202,6 +202,18 @@ if (appRole && /^[A-Za-z_][A-Za-z0-9_]*$/.test(appRole)) {
   await db.query(`GRANT SELECT, UPDATE ON mail_templates TO "${appRole}"`)
 }
 
+await db.query(`
+  CREATE TABLE IF NOT EXISTS invitation_deliveries (
+    batch_hash TEXT NOT NULL,
+    email_hash TEXT NOT NULL,
+    sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (batch_hash, email_hash)
+  )
+`)
+if (appRole && /^[A-Za-z_][A-Za-z0-9_]*$/.test(appRole)) {
+  await db.query(`GRANT SELECT, INSERT ON invitation_deliveries TO "${appRole}"`)
+}
+
 if (process.env.DATABASE_URL) {
   const app = new pg.Client({
     connectionString: process.env.DATABASE_URL,
@@ -211,6 +223,9 @@ if (process.env.DATABASE_URL) {
   try {
     await app.query("BEGIN")
     await app.query(`INSERT INTO join_nonces (nonce_hash, ip_hash) VALUES ('probe', 'probe')`)
+    await app.query("ROLLBACK")
+    await app.query("BEGIN")
+    await app.query(`INSERT INTO invitation_deliveries (batch_hash, email_hash) VALUES ('probe', 'probe')`)
     await app.query("ROLLBACK")
     await app.query("BEGIN")
     let blocked = false

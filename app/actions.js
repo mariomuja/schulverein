@@ -18,6 +18,7 @@ import { getMember, insertMember, markMemberDeleted, memberFromFields, preserveB
 import { confirmJoinRequest, sendConfirmationMail, submitJoinRequest } from "../lib/join"
 import { hashSecret } from "../lib/secret"
 import { sendTemplateMail, updateMailTemplate } from "../lib/outgoing-mail"
+import { deliverInvitation, readAgenda } from "../lib/invitation"
 
 async function boardActor() {
   const user = await getUser()
@@ -692,6 +693,24 @@ export async function saveMailTemplate(formData) {
   }
   revalidatePath("/vorlagen")
   redirect(`/vorlagen?vorlage=${encodeURIComponent(id)}&hinweis=gespeichert`)
+}
+
+export async function sendAssemblyInvitation(_previous, formData) {
+  const user = await boardActor()
+  if (!canEditMembers(user)) redirect("/mitglieder")
+  const mode = formData.get("mode") === "all" ? "all" : formData.get("mode") === "test" ? "test" : ""
+  if (!mode) return { error: "Der Versand konnte nicht gestartet werden." }
+  try {
+    return await deliverInvitation({
+      user,
+      mode,
+      subject: formData.get("subject"),
+      body: formData.get("body"),
+      agenda: readAgenda(formData.get("agenda")),
+    })
+  } catch {
+    return { error: "Die Einladung konnte nicht gesendet werden." }
+  }
 }
 
 export async function restoreMember(formData) {

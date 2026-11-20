@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import InvitationDialog from "../../components/InvitationDialog"
 import MemberForm from "../../components/MemberForm"
 import MembersList from "../../components/MembersList"
 import SectionTabs from "../../components/SectionTabs"
@@ -6,8 +7,10 @@ import SepaDownload from "../../components/SepaDownload"
 import { canEditMembers, canReadMembers } from "../../lib/access"
 import { boardUser } from "../../lib/auth"
 import { familyLetter, getMember, listDeletedMembers, listMembers, withoutBankData } from "../../lib/members"
+import { invitationContext } from "../../lib/invitation"
 
 export const dynamic = "force-dynamic"
+export const maxDuration = 60
 
 export const metadata = {
   title: "Mitglieder · Schulverein Gymnasium Heidberg",
@@ -67,6 +70,7 @@ export default async function MembersPage({ searchParams }) {
     const editId = Number(Array.isArray(params.bearbeiten) ? params.bearbeiten[0] : params.bearbeiten)
     if (Number.isInteger(editId) && editId > 0) editing = withoutBankData(await getMember(editId))
   }
+  const invitation = editor ? await invitationContext() : null
   const present = new Set(members.map((member) => member.letter).filter(Boolean))
   const shown = letter ? members.filter((member) => member.letter === letter) : members
 
@@ -133,6 +137,16 @@ export default async function MembersPage({ searchParams }) {
               )
             ))}
           </nav>
+          {invitation ? (
+            <div className="mb-3">
+              <InvitationDialog
+                subject={invitation.subject}
+                body={invitation.body}
+                recipientCount={invitation.recipientCount}
+                chairReady={invitation.chairReady}
+              />
+            </div>
+          ) : null}
           <MembersList members={shown.map(listedMember)} deletedMembers={deletedMembers} letter={letter} canEdit={editor} />
           {editing ? <MemberForm key={editing.id} member={editing} letter={letter} /> : null}
     </>
