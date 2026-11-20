@@ -5,7 +5,6 @@ import SectionTabs from "../../components/SectionTabs"
 import { canEditMembers } from "../../lib/access"
 import { getUser } from "../../lib/auth"
 import { countMembers, familyLetter, getMember, listMembers } from "../../lib/members"
-import { givenName } from "../../lib/names"
 
 export const dynamic = "force-dynamic"
 
@@ -14,13 +13,6 @@ export const metadata = {
 }
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
-
-function roleLine(user) {
-  const parts = []
-  if (user.role_label) parts.push(user.role_label)
-  parts.push(user.can_write ? "Förderanträge Schreibrecht" : "Förderanträge Leserecht")
-  return parts.join(" · ")
-}
 
 export default async function MembersPage({ searchParams }) {
   const user = await getUser()
@@ -45,13 +37,6 @@ export default async function MembersPage({ searchParams }) {
   return (
     <>
       <SectionTabs active="mitglieder" />
-      <div className="d-flex justify-content-end mb-3">
-        <p className="mb-0 text-secondary">
-          {givenName(user.name)}
-          <span className="d-none d-md-inline"> · </span>
-          <span className="d-block d-md-inline">{roleLine(user)}</span>
-        </p>
-      </div>
       {hinweis === "mitglied" ? (
         <div className="alert alert-warning" role="status">
           Das Mitglied konnte nicht gespeichert werden. Bitte Name, Vorname und Beitrag prüfen.

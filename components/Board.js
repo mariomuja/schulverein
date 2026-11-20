@@ -1,6 +1,5 @@
 import Link from "next/link"
 import { boardHref } from "../lib/list-query"
-import { givenName } from "../lib/names"
 import SectionTabs from "./SectionTabs"
 import ApplicationCards from "./ApplicationCards"
 import ApplicationsTable from "./ApplicationsTable"
@@ -59,13 +58,6 @@ function ExportLinks({ sort, primary = false }) {
   )
 }
 
-function roleLine(user) {
-  const parts = []
-  if (user.role_label) parts.push(user.role_label)
-  parts.push(user.can_write ? "Schreibrecht" : "Leserecht")
-  return parts.join(" · ")
-}
-
 export default function Board({ user, data, hinweis, sort, filter = "", editId = null }) {
   const message = hints[hinweis]
   const applications = data.applications.filter((application) =>
@@ -75,15 +67,6 @@ export default function Board({ user, data, hinweis, sort, filter = "", editId =
   return (
     <>
       <SectionTabs active="antraege" />
-      <div className="d-flex justify-content-end gap-2 mb-3">
-        <p className="mb-0 text-secondary">
-          {givenName(user.name)}
-          <span className="d-block d-md-inline">
-            <span className="d-none d-md-inline"> · </span>
-            {roleLine(user)}
-          </span>
-        </p>
-      </div>
 
       {message ? (
         <div className="alert alert-warning" role="status">

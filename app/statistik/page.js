@@ -4,19 +4,11 @@ import SectionTabs from "../../components/SectionTabs"
 import { getUser } from "../../lib/auth"
 import { listMemberRecords } from "../../lib/members"
 import { membershipStats } from "../../lib/membership-stats"
-import { givenName } from "../../lib/names"
 
 export const dynamic = "force-dynamic"
 
 export const metadata = {
   title: "Statistik · Schulverein Gymnasium Heidberg",
-}
-
-function roleLine(user) {
-  const parts = []
-  if (user.role_label) parts.push(user.role_label)
-  parts.push(user.can_write ? "Förderanträge Schreibrecht" : "Förderanträge Leserecht")
-  return parts.join(" · ")
 }
 
 export default async function StatisticsPage() {
@@ -28,13 +20,6 @@ export default async function StatisticsPage() {
   return (
     <>
       <SectionTabs active="statistik" />
-      <div className="d-flex justify-content-end mb-3">
-        <p className="mb-0 text-secondary">
-          {givenName(user.name)}
-          <span className="d-none d-md-inline"> · </span>
-          <span className="d-block d-md-inline">{roleLine(user)}</span>
-        </p>
-      </div>
       <div className="table-responsive mb-3">
         <table className="table table-sm table-striped bg-white mb-0">
           <caption className="caption-top text-body">Neue Mitglieder nach Zeitraum</caption>
