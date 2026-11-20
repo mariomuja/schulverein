@@ -19,9 +19,7 @@ const legalBasis = [
   "Artikel 5 der Verordnung (EU) Nr. 260/2012: Der Zahler muss dem Zahlungsempfänger die Erlaubnis zur Abbuchung erteilen. Der Verein bewahrt das Mandat auf, solange es gebraucht wird, und danach noch so lange, wie Rückgaben möglich sind.",
 ]
 
-export default async function JoinPage({ searchParams }) {
-  const user = await getUser()
-  if (!isJoinAccount(user)) redirect("/")
+export async function JoinScreen({ searchParams }) {
   const params = await searchParams
   const hint = Array.isArray(params.hinweis) ? params.hinweis[0] : params.hinweis
   const sent = hint === "gesendet"
@@ -71,4 +69,10 @@ export default async function JoinPage({ searchParams }) {
       ) : null}
     </>
   )
+}
+
+export default async function JoinPage({ searchParams }) {
+  const user = await getUser()
+  if (!isJoinAccount(user)) redirect("/")
+  return <JoinScreen searchParams={searchParams} />
 }

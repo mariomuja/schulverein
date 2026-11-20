@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react"
 import { useFormStatus } from "react-dom"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { lookupBank, submitJoin } from "../app/actions"
 import { germanIbanParts, validGermanIban } from "../lib/iban.mjs"
 import { parseEuroToCents } from "../lib/money"
@@ -54,6 +54,7 @@ function FieldHelp({ label, text }) {
 }
 
 export default function JoinForm({ ticket }) {
+  const pathname = usePathname()
   const router = useRouter()
   const titleId = useId()
   const lookupSeq = useRef(0)
@@ -145,7 +146,7 @@ export default function JoinForm({ ticket }) {
     }
     const result = await submitJoin(formData)
     if (result?.ok) {
-      router.replace("/beitritt?hinweis=gesendet")
+      router.replace(`${pathname}?hinweis=gesendet`)
       return
     }
     if (result?.reload) router.refresh()

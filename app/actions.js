@@ -17,6 +17,7 @@ import { canAdministerUsers, canEditMembers, canReadMembers, ensureAccess, isJoi
 import { getMember, insertMember, markMemberDeleted, memberFromFields, preserveBankData, replaceDraftConfirmation, restoreMember as restoreMemberRecord, splitEmails, updateMember as replaceMember } from "../lib/members"
 import { confirmJoinRequest, sendConfirmationMail, submitJoinRequest } from "../lib/join"
 import { findBankByBlz } from "../lib/banks.mjs"
+import { createLoginSession } from "../lib/login"
 import { hashSecret } from "../lib/secret"
 import { sendTemplateMail, updateMailTemplate } from "../lib/outgoing-mail"
 import { deliverInvitation, readAgenda } from "../lib/invitation"
@@ -753,6 +754,30 @@ export async function setVotingClosed(formData) {
   const result = await withTransaction((q) => sealApplication(q, id, user))
   if (result.error) redirect(`/?hinweis=${result.error}`)
   revalidatePath("/")
+}
+
+export async function establishSession(token) {
+  const opened = await createLoginSession(token)
+  if (!opened) return { ok: false }
+  const jar = await cookies()
+  const secure = process.env.NODE_ENV === "production"
+  jar.set("sv_session", opened.sessionId, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure,
+    path: "/",
+    maxAge: 60 * 60 * 24 * opened.sessionDays,
+  })
+  if (!opened.join && opened.showTokenHint) {
+    jar.set("sv_token_hint", "1", {
+      httpOnly: false,
+      sameSite: "lax",
+      secure,
+      path: "/",
+      maxAge: 120,
+    })
+  }
+  return { ok: true }
 }
 
 export async function lookupBank(blz) {

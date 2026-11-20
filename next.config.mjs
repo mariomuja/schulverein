@@ -39,7 +39,12 @@ const nextConfig = {
     },
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }]
+    const privatePage = { key: "Cache-Control", value: "private, no-store" }
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/:token", headers: [privatePage] },
+      { source: "/beitritt/:path*", headers: [privatePage] },
+    ]
   },
 }
 
