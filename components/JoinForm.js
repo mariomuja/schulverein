@@ -371,7 +371,7 @@ export default function JoinForm({ ticket }) {
           </div>
         </div>
       </div>
-      <div className="card-footer bg-white d-flex flex-wrap gap-2">
+      <div className="card-footer bg-white d-flex flex-wrap gap-2 justify-content-end">
         <SubmitButton ready={ready && complete} />
       </div>
     </form>
