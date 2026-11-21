@@ -29,6 +29,19 @@ Neue Konten entstehen in der Benutzerverwaltung. Der Schatzmeister wird dort nic
 
 Jede Person hat einen dauerhaften persönlichen Link. Der Link wird nur als SHA-256-Hash gespeichert. Ein Aufruf legt eine Sitzung von 30 Tagen im Cookie `sv_session` an; auch die Sitzung liegt nur gehasht in der Datenbank. Der Link selbst bleibt gültig und wird nicht in Referrer-Headern weitergegeben.
 
+## Sicherheit
+
+Mitgliedsdaten, Konten und Beitritte sind vertraulich. Die Anwendung hält sie mit den heute üblichen Mitteln geschlossen.
+
+- **Ort.** Die Anwendung läuft bei Vercel in Frankfurt. Die Datenbank liegt bei Neon in der AWS-Region eu-central-1, ebenfalls Frankfurt.
+- **Verbindung.** Die Verbindung zur Datenbank ist verschlüsselt. Das Zertifikat des Datenbankservers wird geprüft.
+- **Speicherung.** Name, E-Mail, IBAN, BIC und das Lastschriftmandat eines Mitglieds liegen mit AES-256-GCM in der Datenbank. Jeder Datensatz erhält einen eigenen Zufallswert, der Schlüssel ist 256 Bit lang. Zugangslinks, Sitzungen und Bestätigungslinks speichert die Datenbank nur als SHA-256-Hash. Das Protokoll nennt keine IBAN und keine E-Mail-Adresse.
+- **Schlüssel.** Datenbankkennwort und Verschlüsselungsschlüssel liegen in den Umgebungsvariablen von Vercel und Neon. Das Repository enthält den Quelltext und keine Zugangsdaten.
+- **Zugriff.** Ohne den persönlichen Link sind keine Daten zu sehen. Die Sitzung steht in einem `httpOnly`-Cookie, gilt 30 Tage und wird in Produktion nur über HTTPS gesendet. Lesen und Ändern der Mitglieder richtet sich nach dem gespeicherten Recht. Nach der ersten Erfassung zeigt der Änderungsdialog die Kontodaten nicht mehr. Zwei Personen, die gleichzeitig beitreten, sehen nur die eigenen Angaben.
+- **Browser.** Produktion erzwingt HTTPS. Die Seiten lassen sich nicht in fremde Rahmen setzen, der Referrer bleibt leer, und Skripte kommen nur von der eigenen Adresse und vom Bootstrap-CDN. Suchmaschinen sind ausgeschlossen. Anmeldung und Beitritt werden nicht zwischengespeichert.
+- **Revision.** Abgeschlossene Abstimmungen schreiben Trigger in PostgreSQL fest. Diese Trigger legt ein eigenes Datenbankkonto an. Das Konto der laufenden Anwendung kann sie nicht ändern.
+- **Beitritt.** Das Formular verlangt eine gültige E-Mail-Adresse und eine gültige deutsche IBAN. Ein bereits gespeicherter Name, eine bereits gespeicherte Adresse oder eine bereits gespeicherte IBAN sperrt den Beitritt. Automatische Massenanfragen sind begrenzt.
+
 ## Revision
 
 Beim Abschließen schreibt die App eine Niederschrift mit Stimmen, Betrag und Prüfcode. Trigger in PostgreSQL verhindern danach Änderungen an Antrag, Stimmen, Belegen und Niederschrift.
