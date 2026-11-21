@@ -48,10 +48,10 @@ Beim Abschließen schreibt die App eine Niederschrift mit Stimmen, Betrag und Pr
 
 ## Technik
 
-- Next.js 15 (App Router) und React 19
-- Bootstrap 5.3 und Bootstrap Icons
-- PostgreSQL auf Neon, Zugriff über `pg`
-- PDF mit `pdf-lib`
+- Next.js 16.4 (App Router) und React 19.3
+- Bootstrap 5.3.9 und Bootstrap Icons 1.13
+- PostgreSQL auf Neon, Zugriff über `pg` 8.23
+- PDF mit `pdf-lib` 1.17
 - Betrieb auf Vercel
 
 ## Lokal starten
