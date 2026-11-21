@@ -1,5 +1,7 @@
 # Schulverein – Förderanträge
 
+![Architektur: Browser, Vercel, Neon PostgreSQL und SMTP](docs/architektur.png)
+
 Web-App für die Abstimmung über Förderanträge des Schulvereins des Gymnasiums Heidberg e.V.
 
 Produktion: [schulverein.vercel.app](https://schulverein.vercel.app)

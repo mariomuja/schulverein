@@ -1,0 +1,18 @@
+flowchart TB
+  Browser["Browser"] --> App
+
+  subgraph Vercel["Vercel · Frankfurt"]
+    App["Next.js 15 · React 19<br/>Sitzung im Cookie"]
+    App --> Bereiche["Förderanträge · Mitglieder · Beitritt<br/>Statistik · Vorlagen"]
+  end
+
+  Bereiche --> Daten
+  Bereiche --> Postfach["SMTP<br/>schulverein@gymnasium-heidberg.de"]
+
+  subgraph Daten["Neon PostgreSQL · AWS eu-central-1"]
+    direction LR
+    Zugang["users · sessions"]
+    Antraege["applications · votes<br/>Belege · Niederschrift"]
+    Mitgliederdaten["members · join_requests<br/>AES-256-GCM"]
+    Stamm["bank_codes · mail_templates<br/>invitation_deliveries"]
+  end
