@@ -1,8 +1,8 @@
-# Schulverein – Förderanträge
+# Schulverein des Gymnasiums Heidberg e.V.
 
 ![Architektur: Browser, Vercel, Neon PostgreSQL und SMTP](docs/architektur.png)
 
-Web-App für die Abstimmung über Förderanträge des Schulvereins des Gymnasiums Heidberg e.V.
+Web-App für Förderanträge, Mitgliedsdaten, Statistik und Spenden.
 
 Produktion: [schulverein.vercel.app](https://schulverein.vercel.app)
 
@@ -10,14 +10,34 @@ Die Seite ist nicht für Suchmaschinen bestimmt. Ohne persönliche Anmeldung ers
 
 ## Funktionen
 
-- Förderanträge mit Datum, Antragsteller, Zweck und Höchstbetrag anlegen, ändern und entfernen, solange die Abstimmung offen ist.
+### Förderanträge
+
+- Anträge mit Datum, Antragsteller, Zweck und Höchstbetrag anlegen, ändern und entfernen, solange die Abstimmung offen ist.
 - Mit Ja oder Nein abstimmen. Genehmigt ist ein Antrag, wenn mehr als die Hälfte der Stimmberechtigten mit Ja stimmt.
 - Belege an offenen Anträgen hinterlegen (JPEG, PNG, WebP, GIF, HEIC, HEIF, PDF; höchstens 12 Dateien, je 4 MB) und in der Vorschau mit Lupe ansehen.
 - Die Abstimmung abschließen, sobald ein Beleg hinterlegt ist. Das kann nur der Schatzmeister. Danach sind Antrag, Stimmen und Belege festgeschrieben. Der Höchstbetrag darf über dem Betrag auf dem Beleg liegen.
-- Alle Anträge als CSV und als PDF exportieren. Kontodaten werden nicht gespeichert.
-- Benutzer mit Schreib- oder Leserecht anlegen, den persönlichen Zugangslink erneuern und Konten ohne abgegebene Stimme entfernen.
+- Alle Anträge als CSV und als PDF exportieren. Kontodaten stehen dort nicht.
+- Auf dem Notebook (ab 1200 px Breite) stehen die Anträge in einer Tabelle. Darunter erscheinen sie als Karten.
 
-Auf dem Notebook (ab 1200 px Breite) stehen die Anträge in einer Tabelle. Darunter erscheinen sie als Karten.
+### Mitgliedsdaten
+
+- Mitglieder mit Name, Anschrift, E-Mail, Eintrittsdatum und Beitrag erfassen, ändern und nach dem Nachnamen filtern.
+- Neue Mitglieder nutzen einen Beitrittslink. Die Mitgliedschaft gilt erst, wenn die E-Mail-Adresse über den Link bestätigt ist.
+- Ein bereits gespeicherter Name, eine bereits gespeicherte E-Mail-Adresse oder eine bereits gespeicherte IBAN sperrt den Beitritt.
+- Austritte bleiben in der Liste. Liegt eine E-Mail-Adresse vor, geht eine Austrittsbestätigung hinaus.
+- E-Mail-Adressen exportieren und die Einladung zur Mitgliederversammlung aus einer Vorlage versenden.
+
+### Statistik
+
+- Eintritte und Austritte für das laufende Jahr, die letzten fünf Jahre, die letzten zehn Jahre und seit Beginn.
+- Mitgliederentwicklung je Jahr mit neuen Mitgliedern, Austritten und Bestand zum Jahresende.
+- Diagramme für die Eintritte je Jahr und für den Bestand.
+
+### Spenden
+
+- Der Beitrag pro Schuljahr steht am Mitglied. Bankname und BIC ergeben sich aus der IBAN.
+- Das Lastschriftmandat wird beim Beitritt bestätigt und mit den Kontodaten verschlüsselt aufbewahrt.
+- Die SEPA-Liste lädt nur, wer die Vorankündigung an die Mitglieder zur Kenntnis genommen hat. Entwürfe und ausgetretene Mitglieder sind darin nicht enthalten.
 
 ## Rechte
 
