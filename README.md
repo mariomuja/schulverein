@@ -41,7 +41,10 @@ Die Seite ist nicht für Suchmaschinen bestimmt. Ohne persönliche Anmeldung ers
 
 ### Spenden
 
-- Verwaltung von Ein- und Ausgaben für zweckgebundene Spenden.
+- Spendentöpfe sammeln zweckgebundene Spenden. Jede angemeldete Person kann sie lesen. Anlegen und Buchen darf, wer in der Benutzerverwaltung das Schreibrecht für Spendentöpfe hat.
+- Die Töpfe stehen in einer Auswahlliste. Daneben lässt sich ein neuer Topf anlegen. Nach der Auswahl zeigt eine Tabelle die Zugänge und Abgänge. Auf dem Handy steht der Betrag des Topfes rechts oben.
+- Ein Zugang ist eine einmalige Spende. Sie wird mit Betrag in Euro und Verwendungszweck erfasst.
+- Ein Abgang entsteht aus einem Förderantrag. Der Antrag nennt den Spendentopf und mindert ihn um den Höchstbetrag. Beim Abschließen erscheint dieser Betrag mit dem Zweck des Antrags als Abgang im Topf. Der Topf endet bei 0 €.
 
 ## Rechte
 
