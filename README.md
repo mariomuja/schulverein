@@ -2,7 +2,7 @@
 
 ![Architektur: Browser, Vercel, Neon PostgreSQL und SMTP](docs/architektur.png)
 
-Web-App für Förderanträge, Mitgliedsdaten, Statistik und Spenden.
+Web-App für Förderanträge, Mitgliedsdaten, neue Mitgliedschaften, Statistik und Spenden.
 
 Produktion: [schulverein.vercel.app](https://schulverein.vercel.app)
 
@@ -22,10 +22,16 @@ Die Seite ist nicht für Suchmaschinen bestimmt. Ohne persönliche Anmeldung ers
 ### Mitgliedsdaten
 
 - Mitglieder mit Name, Anschrift, E-Mail, Eintrittsdatum und Beitrag erfassen, ändern und nach dem Nachnamen filtern.
-- Neue Mitglieder nutzen einen Beitrittslink. Die Mitgliedschaft gilt erst, wenn die E-Mail-Adresse über den Link bestätigt ist.
-- Ein bereits gespeicherter Name, eine bereits gespeicherte E-Mail-Adresse oder eine bereits gespeicherte IBAN sperrt den Beitritt.
 - Austritte bleiben in der Liste. Liegt eine E-Mail-Adresse vor, geht eine Austrittsbestätigung hinaus.
 - E-Mail-Adressen exportieren und die Einladung zur Mitgliederversammlung aus einer Vorlage versenden.
+
+### Neue Mitgliedschaft
+
+- Neue Mitglieder nutzen einen Beitrittslink. Die Mitgliedschaft gilt erst, wenn die E-Mail-Adresse über den Link bestätigt ist.
+- Ein bereits gespeicherter Name, eine bereits gespeicherte E-Mail-Adresse oder eine bereits gespeicherte IBAN sperrt den Beitritt.
+- Der Beitrag pro Schuljahr steht am Mitglied. Bankname und BIC ergeben sich aus der IBAN.
+- Das Lastschriftmandat wird beim Beitritt bestätigt und mit den Kontodaten verschlüsselt aufbewahrt.
+- Die SEPA-Liste lädt nur, wer die Vorankündigung an die Mitglieder zur Kenntnis genommen hat. Entwürfe und ausgetretene Mitglieder sind darin nicht enthalten.
 
 ### Statistik
 
@@ -35,9 +41,7 @@ Die Seite ist nicht für Suchmaschinen bestimmt. Ohne persönliche Anmeldung ers
 
 ### Spenden
 
-- Der Beitrag pro Schuljahr steht am Mitglied. Bankname und BIC ergeben sich aus der IBAN.
-- Das Lastschriftmandat wird beim Beitritt bestätigt und mit den Kontodaten verschlüsselt aufbewahrt.
-- Die SEPA-Liste lädt nur, wer die Vorankündigung an die Mitglieder zur Kenntnis genommen hat. Entwürfe und ausgetretene Mitglieder sind darin nicht enthalten.
+- Verwaltung von Ein- und Ausgaben für zweckgebundene Spenden.
 
 ## Rechte
 
