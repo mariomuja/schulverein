@@ -41,14 +41,14 @@ Die Seite ist nicht für Suchmaschinen bestimmt. Ohne persönliche Anmeldung ers
 
 ### Spenden
 
-- Spendentöpfe sammeln zweckgebundene Spenden. Jede angemeldete Person kann sie lesen. Anlegen und Buchen darf, wer in der Benutzerverwaltung das Schreibrecht für Spendentöpfe hat.
+- Spendentöpfe sammeln zweckgebundene Spenden. Jede angemeldete Person kann sie lesen. Anlegen und Spenden erfassen darf, wer in der Benutzerverwaltung das Schreibrecht für Spendentöpfe hat.
 - Die Töpfe stehen in einer Auswahlliste. Daneben lässt sich ein neuer Topf anlegen. Nach der Auswahl zeigt eine Tabelle die Zugänge und Abgänge. Auf dem Handy steht der Betrag des Topfes rechts oben.
-- Ein Zugang ist eine einmalige Spende. Sie wird mit Betrag in Euro und Verwendungszweck erfasst.
-- Ein Abgang entsteht aus einem Förderantrag. Der Antrag nennt den Spendentopf und mindert ihn um den Höchstbetrag. Beim Abschließen erscheint dieser Betrag mit dem Zweck des Antrags als Abgang im Topf. Der Topf endet bei 0 €.
+- Ein Zugang ist eine einmalige Spende mit Betrag in Euro und Verwendungszweck.
+- Ein Abgang entsteht beim Abschließen eines Förderantrags. Jede Person mit Schreibrecht für Förderanträge kann jeden Topf wählen. Liegt der Höchstbetrag über dem Rest im Topf, lässt sich der Antrag nicht speichern. Beim Abschließen erscheint der Höchstbetrag mit dem Zweck des Antrags als Abgang. Der Topf geht nicht unter 0 €.
 
 ## Rechte
 
-Personen mit Schreibrecht legen Anträge an, stimmen ab, pflegen Belege und Benutzer. Personen mit Leserecht sehen die Anträge und können CSV und PDF herunterladen. Abschließen bleibt dem Schatzmeister vorbehalten.
+Personen mit Schreibrecht legen Anträge an, stimmen ab, pflegen Belege und Benutzer. Personen mit Leserecht sehen die Anträge und können CSV und PDF herunterladen. Abschließen bleibt dem Schatzmeister vorbehalten. Spendentöpfe kann jede angemeldete Person lesen. Schreiben daran vergibt die Benutzerverwaltung.
 
 Neue Konten entstehen in der Benutzerverwaltung. Der Schatzmeister wird dort nicht neu vergeben.
 

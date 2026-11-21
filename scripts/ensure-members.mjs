@@ -32,6 +32,13 @@ await db.query(
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS members_access TEXT NOT NULL DEFAULT 'none'`,
 )
 await db.query(
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS pots_access TEXT NOT NULL DEFAULT 'read'`,
+)
+await db.query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_pots_access_check`)
+await db.query(
+  `ALTER TABLE users ADD CONSTRAINT users_pots_access_check CHECK (pots_access IN ('read', 'write'))`,
+)
+await db.query(
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS login_count INTEGER NOT NULL DEFAULT 0`,
 )
 await db.query(
@@ -116,6 +123,7 @@ await db.query(`
          OR NEW.role_label IS DISTINCT FROM OLD.role_label
          OR NEW.can_write IS DISTINCT FROM OLD.can_write
          OR NEW.members_access IS DISTINCT FROM OLD.members_access
+         OR NEW.pots_access IS DISTINCT FROM OLD.pots_access
          OR NEW.is_treasurer IS DISTINCT FROM OLD.is_treasurer
          OR NEW.sort_order IS DISTINCT FROM OLD.sort_order
          OR NEW.join_link IS DISTINCT FROM OLD.join_link THEN
@@ -253,6 +261,72 @@ if (process.env.DATABASE_URL) {
   } finally {
     await app.end()
   }
+}
+
+await db.query(`
+  CREATE TABLE IF NOT EXISTS donation_pots (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by INTEGER REFERENCES users(id)
+  )
+`)
+await db.query(
+  `CREATE UNIQUE INDEX IF NOT EXISTS donation_pots_name_lower ON donation_pots (lower(name))`,
+)
+await db.query(`ALTER TABLE applications ADD COLUMN IF NOT EXISTS pot_id INTEGER REFERENCES donation_pots(id)`)
+await db.query(`
+  CREATE TABLE IF NOT EXISTS donation_entries (
+    id SERIAL PRIMARY KEY,
+    pot_id INTEGER NOT NULL REFERENCES donation_pots(id),
+    direction TEXT NOT NULL CHECK (direction IN ('in', 'out')),
+    amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+    purpose TEXT NOT NULL,
+    application_id INTEGER UNIQUE REFERENCES applications(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by INTEGER REFERENCES users(id),
+    CHECK (
+      (direction = 'in' AND application_id IS NULL)
+      OR (direction = 'out' AND application_id IS NOT NULL)
+    )
+  )
+`)
+await db.query(`
+  CREATE OR REPLACE FUNCTION schulverein_protect_application()
+  RETURNS trigger
+  LANGUAGE plpgsql
+  AS $$
+  BEGIN
+    IF TG_OP = 'DELETE' THEN
+      IF EXISTS (SELECT 1 FROM vote_records WHERE application_id = OLD.id) THEN
+        RAISE EXCEPTION 'revisionssicher: abgeschlossener Antrag darf nicht gelöscht werden';
+      END IF;
+      RETURN OLD;
+    END IF;
+    IF EXISTS (SELECT 1 FROM vote_records WHERE application_id = OLD.id) THEN
+      IF OLD.voting_closed
+         OR NEW.application_date IS DISTINCT FROM OLD.application_date
+         OR NEW.applicant IS DISTINCT FROM OLD.applicant
+         OR NEW.purpose IS DISTINCT FROM OLD.purpose
+         OR NEW.amount_cents IS DISTINCT FROM OLD.amount_cents
+         OR NEW.pot_id IS DISTINCT FROM OLD.pot_id
+         OR NEW.voting_closed IS DISTINCT FROM TRUE
+         OR NOT schulverein_record_matches(NEW.id) THEN
+        RAISE EXCEPTION 'revisionssicher: abgeschlossener Antrag darf nicht geändert werden';
+      END IF;
+    ELSIF NEW.voting_closed THEN
+      RAISE EXCEPTION 'revisionssicher: abschluss ohne passende niederschrift';
+    END IF;
+    RETURN NEW;
+  END;
+  $$
+`)
+if (appRole && /^[A-Za-z_][A-Za-z0-9_]*$/.test(appRole)) {
+  const role = `"${appRole}"`
+  await db.query(`GRANT SELECT, INSERT ON donation_pots TO ${role}`)
+  await db.query(`GRANT USAGE, SELECT ON SEQUENCE donation_pots_id_seq TO ${role}`)
+  await db.query(`GRANT SELECT, INSERT ON donation_entries TO ${role}`)
+  await db.query(`GRANT USAGE, SELECT ON SEQUENCE donation_entries_id_seq TO ${role}`)
 }
 
 await db.end()

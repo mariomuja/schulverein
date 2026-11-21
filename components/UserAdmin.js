@@ -16,17 +16,21 @@ function AccessForm({ account }) {
   const router = useRouter()
   const initialApplications = account.canWrite ? "write" : "read"
   const initialMembers = account.membersAccess ?? "none"
+  const initialPots = account.potsAccess === "write" ? "write" : "read"
   const applicationsValue = useRef(initialApplications)
   const membersValue = useRef(initialMembers)
+  const potsValue = useRef(initialPots)
   const [applications, setApplications] = useState(initialApplications)
   const [members, setMembers] = useState(initialMembers)
+  const [pots, setPots] = useState(initialPots)
   const [pending, setPending] = useState(false)
   const [saved, setSaved] = useState(false)
   const saveGeneration = useRef(0)
 
-  async function save(nextApplications, nextMembers) {
+  async function save(nextApplications, nextMembers, nextPots) {
     applicationsValue.current = nextApplications
     membersValue.current = nextMembers
+    potsValue.current = nextPots
     const generation = saveGeneration.current + 1
     saveGeneration.current = generation
     setPending(true)
@@ -35,6 +39,7 @@ function AccessForm({ account }) {
     formData.set("userId", String(account.id))
     formData.set("applicationsAccess", nextApplications)
     formData.set("membersAccess", nextMembers)
+    formData.set("potsAccess", nextPots)
     await updateUserAccess(formData)
     if (generation !== saveGeneration.current) return
     setPending(false)
@@ -44,11 +49,11 @@ function AccessForm({ account }) {
 
   return (
     <form
-      action={() => save(applicationsValue.current, membersValue.current)}
+      action={() => save(applicationsValue.current, membersValue.current, potsValue.current)}
       className="row g-2 align-items-end mb-2"
     >
       <input type="hidden" name="userId" value={account.id} />
-      <div className="col-12 col-md-4">
+      <div className="col-12 col-lg-3">
         <label className="form-label small mb-1" htmlFor={`applications-${account.id}`}>
           Förderanträge
         </label>
@@ -59,14 +64,14 @@ function AccessForm({ account }) {
           onChange={(event) => {
             const next = event.target.value
             setApplications(next)
-            save(next, membersValue.current)
+            save(next, membersValue.current, potsValue.current)
           }}
         >
           <option value="read">Leserecht</option>
           <option value="write">Schreibrecht</option>
         </select>
       </div>
-      <div className="col-12 col-md-4">
+      <div className="col-12 col-lg-3">
         <label className="form-label small mb-1" htmlFor={`members-${account.id}`}>
           Mitglieder
         </label>
@@ -77,7 +82,7 @@ function AccessForm({ account }) {
           onChange={(event) => {
             const next = event.target.value
             setMembers(next)
-            save(applicationsValue.current, next)
+            save(applicationsValue.current, next, potsValue.current)
           }}
         >
           <option value="none">Kein Zugang</option>
@@ -85,7 +90,25 @@ function AccessForm({ account }) {
           <option value="write">Schreibrecht</option>
         </select>
       </div>
-      <div className="col-12 col-md-4 d-flex flex-wrap align-items-center gap-2">
+      <div className="col-12 col-lg-3">
+        <label className="form-label small mb-1" htmlFor={`pots-${account.id}`}>
+          Spendentöpfe
+        </label>
+        <select
+          id={`pots-${account.id}`}
+          className="form-select form-select-sm"
+          value={pots}
+          onChange={(event) => {
+            const next = event.target.value
+            setPots(next)
+            save(applicationsValue.current, membersValue.current, next)
+          }}
+        >
+          <option value="read">Leserecht</option>
+          <option value="write">Schreibrecht</option>
+        </select>
+      </div>
+      <div className="col-12 col-lg-3 d-flex flex-wrap align-items-center gap-2">
         <button className="btn btn-outline-primary btn-sm" type="submit" disabled={pending}>
           {pending ? "Speichert…" : "Rechte speichern"}
         </button>
@@ -205,7 +228,9 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
                       </li>
                       <li>
                         <span className="fw-semibold">Rechte:</span> für Förderanträge Leserecht oder
-                        Schreibrecht, für Mitglieder kein Zugang, Leserecht oder Schreibrecht.
+                        Schreibrecht, für Mitglieder kein Zugang, Leserecht oder Schreibrecht, für
+                        Spendentöpfe Leserecht oder Schreibrecht. Lesen der Spendentöpfe gilt für jede
+                        angemeldete Person.
                       </li>
                       <li>
                         <span className="fw-semibold">Neues Mitglied:</span> das ist der Beitrittslink
@@ -244,7 +269,7 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
                         </div>
                         {canAdminister && !account.joinLink ? (
                           <AccessForm
-                            key={`${account.id}-${account.canWrite ? "write" : "read"}-${account.membersAccess ?? "none"}`}
+                            key={`${account.id}-${account.canWrite ? "write" : "read"}-${account.membersAccess ?? "none"}-${account.potsAccess ?? "read"}`}
                             account={account}
                           />
                         ) : null}
@@ -349,6 +374,15 @@ export default function UserAdmin({ accounts, canAdminister = false, currentUser
                       </label>
                       <select id="membersAccess" className="form-select" name="membersAccess" defaultValue="none">
                         <option value="none">Kein Zugang</option>
+                        <option value="read">Leserecht</option>
+                        <option value="write">Schreibrecht</option>
+                      </select>
+                    </div>
+                    <div className="col-6 col-md-3">
+                      <label className="form-label" htmlFor="potsAccess">
+                        Spendentöpfe
+                      </label>
+                      <select id="potsAccess" className="form-select" name="potsAccess" defaultValue="read">
                         <option value="read">Leserecht</option>
                         <option value="write">Schreibrecht</option>
                       </select>

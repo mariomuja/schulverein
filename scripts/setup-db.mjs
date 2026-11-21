@@ -173,6 +173,7 @@ await db.query(`
          OR NEW.applicant IS DISTINCT FROM OLD.applicant
          OR NEW.purpose IS DISTINCT FROM OLD.purpose
          OR NEW.amount_cents IS DISTINCT FROM OLD.amount_cents
+         OR NEW.pot_id IS DISTINCT FROM OLD.pot_id
          OR NEW.voting_closed IS DISTINCT FROM TRUE
          OR NOT schulverein_record_matches(NEW.id) THEN
         RAISE EXCEPTION 'revisionssicher: abgeschlossener Antrag darf nicht geändert werden';

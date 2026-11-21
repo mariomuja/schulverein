@@ -11,6 +11,7 @@ import VoteControl from "./VoteControl"
 
 export default function ApplicationCards({
   applications,
+  pots = [],
   user,
   sort,
   filter,
@@ -26,6 +27,7 @@ export default function ApplicationCards({
         enabled={editable}
         editOnLoad={editId === application.id}
         application={application}
+        pots={pots}
         sort={sort}
         filter={filter}
       >
@@ -49,7 +51,12 @@ export default function ApplicationCards({
               </div>
             </div>
             <StatusIcon application={application} />
-            <p className="purpose purpose-mobile mt-2 mb-3">{application.purpose}</p>
+            <p className="purpose purpose-mobile mt-2 mb-3">
+              {application.purpose}
+              {application.pot_name ? (
+                <span className="d-block small text-secondary mt-1">Spendentopf: {application.pot_name}</span>
+              ) : null}
+            </p>
             <div className="mb-3">
               <div className="small text-secondary mb-1">Beleg</div>
               <Receipts application={application} user={user} />

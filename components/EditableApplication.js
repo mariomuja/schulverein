@@ -10,6 +10,7 @@ export default function EditableApplication({
   editOnLoad = false,
   wideLayout = false,
   application,
+  pots = [],
   sort,
   filter,
   children,
@@ -41,6 +42,7 @@ export default function EditableApplication({
       {open ? (
         <EditApplication
           application={application}
+          pots={pots}
           sort={sort}
           filter={filter}
           onClose={() => setOpen(false)}

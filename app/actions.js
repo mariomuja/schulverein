@@ -13,7 +13,8 @@ import { givenName, hasGivenAndFamilyName } from "../lib/names"
 import { archivePeriod } from "../lib/archive"
 import { appendLog, sealApplication } from "../lib/seal"
 import { acceptReceipt, maxReceipts } from "../lib/receipts"
-import { canAdministerUsers, canEditMembers, canReadMembers, ensureAccess, isJoinAccount } from "../lib/access"
+import { canAdministerUsers, canEditMembers, canReadMembers, canWritePots, ensureAccess, isJoinAccount } from "../lib/access"
+import { potCovers } from "../lib/pots"
 import { getMember, insertMember, markMemberDeleted, memberEmailExists, memberFromFields, memberIbanExists, memberNameExists, preserveBankData, replaceDraftConfirmation, restoreMember as restoreMemberRecord, splitEmails, updateMember as replaceMember } from "../lib/members"
 import { confirmJoinRequest, sendConfirmationMail, submitJoinRequest } from "../lib/join"
 import { findBankByBlz } from "../lib/banks.mjs"
@@ -69,6 +70,7 @@ export async function addApplication(formData) {
   const applicant = cleanName(formData.get("applicant"))
   const purpose = String(formData.get("purpose") ?? "").trim()
   const amountCents = parseEuroToCents(formData.get("amount"))
+  const potId = readPotId(formData)
 
   if (applicant.length > 0 && applicant.length <= 120 && !hasGivenAndFamilyName(applicant)) {
     redirect(
@@ -86,7 +88,8 @@ export async function addApplication(formData) {
     applicant.length > 120 ||
     purpose.length < 1 ||
     purpose.length > 500 ||
-    amountCents == null
+    amountCents == null ||
+    potId === false
   ) {
     redirect(
       boardHref({
@@ -97,12 +100,13 @@ export async function addApplication(formData) {
     )
   }
 
-  await withTransaction(async (q) => {
+  const saved = await withTransaction(async (q) => {
+    if (potId && !(await potCovers(q, potId, amountCents))) return { error: "topf" }
     const inserted = await q(
-      `INSERT INTO applications (application_date, applicant, purpose, amount_cents)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO applications (application_date, applicant, purpose, amount_cents, pot_id)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [applicationDate, applicant, purpose, amountCents],
+      [applicationDate, applicant, purpose, amountCents, potId],
     )
     await appendLog(q, {
       user,
@@ -110,8 +114,19 @@ export async function addApplication(formData) {
       applicationId: inserted.rows[0].id,
       detail: `${applicationDate}, ${applicant}, ${amountCents} Cent.`,
     })
+    return { ok: true }
   })
+  if (saved.error) {
+    redirect(
+      boardHref({
+        sort: String(formData.get("sort") ?? ""),
+        filter: String(formData.get("filter") ?? ""),
+        hinweis: saved.error,
+      }),
+    )
+  }
   revalidatePath("/")
+  revalidatePath("/spenden")
 }
 
 export async function removeApplication(formData) {
@@ -152,6 +167,7 @@ export async function updateApplication(formData) {
   const applicant = cleanName(formData.get("applicant"))
   const purpose = String(formData.get("purpose") ?? "").trim()
   const amountCents = parseEuroToCents(formData.get("amount"))
+  const potId = readPotId(formData)
   const path = (hinweis) =>
     boardHref({
       sort: String(formData.get("sort") ?? ""),
@@ -171,19 +187,21 @@ export async function updateApplication(formData) {
     applicant.length > 120 ||
     purpose.length < 1 ||
     purpose.length > 500 ||
-    amountCents == null
+    amountCents == null ||
+    potId === false
   ) {
     redirect(path("antrag"))
   }
 
   const updated = await withTransaction(async (q) => {
+    if (potId && !(await potCovers(q, potId, amountCents))) return { error: "topf" }
     const result = await q(
       `UPDATE applications
-       SET application_date = $2, applicant = $3, purpose = $4, amount_cents = $5
+       SET application_date = $2, applicant = $3, purpose = $4, amount_cents = $5, pot_id = $6
        WHERE id = $1
          AND voting_closed = FALSE
          AND NOT EXISTS (SELECT 1 FROM vote_records WHERE application_id = $1)`,
-      [id, applicationDate, applicant, purpose, amountCents],
+      [id, applicationDate, applicant, purpose, amountCents, potId],
     )
     if (result.rowCount > 0) {
       await appendLog(q, {
@@ -195,8 +213,10 @@ export async function updateApplication(formData) {
     }
     return result
   })
+  if (updated?.error) redirect(path(updated.error))
   if (updated.rowCount === 0) redirect(path("geaendert"))
   revalidatePath("/")
+  revalidatePath("/spenden")
 }
 
 export async function addReceipts(formData) {
@@ -331,6 +351,14 @@ function cleanName(value) {
   return String(value ?? "").trim().replace(/\s+/g, " ")
 }
 
+function readPotId(formData) {
+  const raw = String(formData.get("potId") ?? "").trim()
+  if (!raw) return null
+  const id = Number(raw)
+  if (!Number.isInteger(id) || id <= 0) return false
+  return id
+}
+
 export async function addUser(formData) {
   const user = await boardActor()
   if (!canAdministerUsers(user)) redirect("/?hinweis=recht")
@@ -341,6 +369,7 @@ export async function addUser(formData) {
   const membersAccess = ["read", "write"].includes(String(formData.get("membersAccess")))
     ? String(formData.get("membersAccess"))
     : "none"
+  const potsAccess = formData.get("potsAccess") === "write" ? "write" : "read"
   if (name.length < 1 || name.length > 120 || roleLabel.length > 80) {
     redirect("/?hinweis=benutzer")
   }
@@ -351,19 +380,19 @@ export async function addUser(formData) {
     await ensureAccess()
     created = await withTransaction(async (q) => {
       const inserted = await q(
-        `INSERT INTO users (name, role_label, can_write, members_access, is_treasurer, sort_order, login_token)
+        `INSERT INTO users (name, role_label, can_write, members_access, pots_access, is_treasurer, sort_order, login_token)
          VALUES (
-           $1, $2, $3, $4, FALSE,
+           $1, $2, $3, $4, $5, FALSE,
            (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM users),
-           $5
+           $6
          )
          RETURNING id`,
-        [name, roleLabel || null, canWrite, membersAccess, hashSecret(token)],
+        [name, roleLabel || null, canWrite, membersAccess, potsAccess, hashSecret(token)],
       )
       await appendLog(q, {
         user,
         action: "benutzer_angelegt",
-        detail: `${name}, Förderanträge ${canWrite ? "Schreibrecht" : "Leserecht"}, Mitglieder ${membersAccess}.`,
+        detail: `${name}, Förderanträge ${canWrite ? "Schreibrecht" : "Leserecht"}, Mitglieder ${membersAccess}, Spendentöpfe ${potsAccess === "write" ? "Schreibrecht" : "Leserecht"}.`,
       })
       return inserted.rows[0]
     })
@@ -517,13 +546,14 @@ export async function updateUserAccess(formData) {
   const id = userId(formData)
   const applicationsWrite = formData.get("applicationsAccess") === "write"
   const membersAccess = String(formData.get("membersAccess") ?? "none")
+  const potsAccess = formData.get("potsAccess") === "write" ? "write" : "read"
   if (!id || !["none", "read", "write"].includes(membersAccess)) redirect("/?hinweis=benutzer")
   const target = await query(`SELECT join_link FROM users WHERE id = $1`, [id])
   if (!target.rows[0] || target.rows[0].join_link) redirect("/?hinweis=recht")
   await ensureAccess()
   const updated = await query(
-    `UPDATE users SET can_write = $2, members_access = $3 WHERE id = $1 RETURNING name`,
-    [id, applicationsWrite, membersAccess],
+    `UPDATE users SET can_write = $2, members_access = $3, pots_access = $4 WHERE id = $1 RETURNING name`,
+    [id, applicationsWrite, membersAccess, potsAccess],
   )
   if (!updated.rows[0]) redirect("/?hinweis=benutzer")
   await query(
@@ -532,7 +562,7 @@ export async function updateUserAccess(formData) {
     [
       user.id,
       user.name,
-      `${updated.rows[0].name}: Förderanträge ${applicationsWrite ? "Schreibrecht" : "Leserecht"}, Mitglieder ${membersAccess}.`,
+      `${updated.rows[0].name}: Förderanträge ${applicationsWrite ? "Schreibrecht" : "Leserecht"}, Mitglieder ${membersAccess}, Spendentöpfe ${potsAccess === "write" ? "Schreibrecht" : "Leserecht"}.`,
     ],
   )
   revalidatePath("/", "layout")
@@ -754,6 +784,7 @@ export async function setVotingClosed(formData) {
   const result = await withTransaction((q) => sealApplication(q, id, user))
   if (result.error) redirect(`/?hinweis=${result.error}`)
   revalidatePath("/")
+  revalidatePath("/spenden")
 }
 
 export async function establishSession(token) {
@@ -831,4 +862,68 @@ export async function confirmJoin(formData) {
   if (!/^[A-Za-z0-9_-]{20,128}$/.test(token)) redirect("/beitritt/bestaetigt")
   const notice = result?.error === "neu" ? "neu" : "ungueltig"
   redirect(`/beitritt/bestaetigen/${token}?hinweis=${notice}`)
+}
+
+function potHref(potId, notice) {
+  const params = new URLSearchParams()
+  if (potId) params.set("topf", String(potId))
+  if (notice) params.set("hinweis", notice)
+  const query = params.toString()
+  return query ? `/spenden?${query}` : "/spenden"
+}
+
+export async function addDonationPot(formData) {
+  const user = await boardActor()
+  if (!canWritePots(user)) redirect("/spenden?hinweis=recht")
+  const name = cleanName(formData.get("name"))
+  if (name.length < 1 || name.length > 80) redirect("/spenden?hinweis=name")
+  let created
+  try {
+    created = await withTransaction(async (q) => {
+      const inserted = await q(
+        `INSERT INTO donation_pots (name, created_by) VALUES ($1, $2) RETURNING id`,
+        [name, user.id],
+      )
+      await appendLog(q, {
+        user,
+        action: "spendentopf",
+        detail: `Spendentopf angelegt.`,
+      })
+      return inserted.rows[0]
+    })
+  } catch (error) {
+    if (error?.code === "23505") redirect("/spenden?hinweis=name")
+    throw error
+  }
+  revalidatePath("/spenden")
+  redirect(potHref(created.id))
+}
+
+export async function addDonation(formData) {
+  const user = await boardActor()
+  if (!canWritePots(user)) redirect("/spenden?hinweis=recht")
+  const potId = readPotId(formData)
+  const amountCents = parseEuroToCents(formData.get("amount"))
+  const purpose = String(formData.get("purpose") ?? "").trim()
+  if (!potId || amountCents == null || purpose.length < 1 || purpose.length > 500) {
+    redirect(potHref(potId || "", "spende"))
+  }
+  const saved = await withTransaction(async (q) => {
+    const pot = await q(`SELECT id FROM donation_pots WHERE id = $1 FOR UPDATE`, [potId])
+    if (pot.rowCount === 0) return { error: "spende" }
+    await q(
+      `INSERT INTO donation_entries (pot_id, direction, amount_cents, purpose, created_by)
+       VALUES ($1, 'in', $2, $3, $4)`,
+      [potId, amountCents, purpose, user.id],
+    )
+    await appendLog(q, {
+      user,
+      action: "spende",
+      detail: `Zugang ${amountCents} Cent.`,
+    })
+    return { ok: true }
+  })
+  if (saved.error) redirect(potHref(potId, saved.error))
+  revalidatePath("/spenden")
+  redirect(potHref(potId))
 }
