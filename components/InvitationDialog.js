@@ -4,7 +4,7 @@ import { useActionState, useEffect, useId, useState } from "react"
 import { createPortal } from "react-dom"
 import { sendAssemblyInvitation } from "../app/actions"
 
-export default function InvitationDialog({ subject, body, recipientCount, chairReady }) {
+export default function InvitationDialog({ subject, body, recipientCount }) {
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [confirmAll, setConfirmAll] = useState(false)
@@ -13,6 +13,7 @@ export default function InvitationDialog({ subject, body, recipientCount, chairR
   const [state, action, pending] = useActionState(sendAssemblyInvitation, null)
   const titleId = useId()
   const fileId = useId()
+  const testAddressId = useId()
 
   useEffect(() => setMounted(true), [])
   useEffect(() => {
@@ -83,9 +84,6 @@ export default function InvitationDialog({ subject, body, recipientCount, chairR
                       <label className="form-label" htmlFor={fileId}>Tagesordnung als PDF</label>
                       <input id={fileId} className="form-control" name="agenda" type="file" accept="application/pdf,.pdf" />
                       <div className="form-text">Die Datei wird der E-Mail angehängt. Ohne Datei geht die Einladung ohne Anhang hinaus.</div>
-                      {!chairReady ? (
-                        <div className="form-text">Für den Vorsitzenden ist keine eindeutige E-Mail-Adresse gespeichert.</div>
-                      ) : null}
                     </div>
                     {confirmAll ? (
                       <div className="alert alert-warning mt-3 mb-0" role="status">
@@ -107,9 +105,26 @@ export default function InvitationDialog({ subject, body, recipientCount, chairR
                     </button>
                     {confirmAll ? null : (
                       <>
-                        <button className="btn btn-outline-primary" type="submit" name="mode" value="test" disabled={pending || !chairReady}>
-                          {pending ? "Wird gesendet …" : "Test an den Vorsitzenden"}
-                        </button>
+                        <div className="d-flex flex-grow-1 flex-wrap align-items-center gap-2">
+                          <button className="btn btn-outline-primary" type="submit" name="mode" value="test" disabled={pending}>
+                            {pending ? "Wird gesendet …" : "Test an diese Mail-Adresse:"}
+                          </button>
+                          <label className="visually-hidden" htmlFor={testAddressId}>
+                            Mail-Adresse für den Test
+                          </label>
+                          <input
+                            id={testAddressId}
+                            className="form-control"
+                            style={{ width: "16rem" }}
+                            type="email"
+                            name="testAddress"
+                            inputMode="email"
+                            autoComplete="email"
+                            maxLength={200}
+                            spellCheck={false}
+                            disabled={pending}
+                          />
+                        </div>
                         <button
                           className="btn btn-primary"
                           type="button"

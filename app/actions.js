@@ -720,6 +720,7 @@ export async function sendAssemblyInvitation(_previous, formData) {
       subject: formData.get("subject"),
       body: formData.get("body"),
       agenda: readAgenda(formData.get("agenda")),
+      testAddress: formData.get("testAddress"),
     })
   } catch {
     return { error: "Die Einladung konnte nicht gesendet werden." }

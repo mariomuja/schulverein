@@ -143,7 +143,6 @@ export default async function MembersPage({ searchParams }) {
                 subject={invitation.subject}
                 body={invitation.body}
                 recipientCount={invitation.recipientCount}
-                chairReady={invitation.chairReady}
               />
             </div>
           ) : null}
