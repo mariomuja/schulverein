@@ -6,7 +6,6 @@ import { givenName } from "../lib/names"
 const tabs = [
   { id: "mitglieder", href: "/mitglieder", label: "Mitglieder" },
   { id: "antraege", href: "/", label: "Förderanträge" },
-  { id: "spenden", href: "/spenden", label: "Spendentöpfe" },
   { id: "vorlagen", href: "/vorlagen", label: "eMail Vorlagen" },
   { id: "statistik", href: "/statistik", label: "Statistik" },
 ]

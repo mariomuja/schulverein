@@ -5,13 +5,12 @@ import { createPortal } from "react-dom"
 import { updateApplication } from "../app/actions"
 import { formatEuro } from "../lib/money"
 
-export default function EditApplication({ application, pots = [], sort, filter, onClose }) {
+export default function EditApplication({ application, sort, filter, onClose }) {
   const titleId = useId()
   const dateId = useId()
   const applicantId = useId()
   const purposeId = useId()
   const amountId = useId()
-  const potFieldId = useId()
   const dialogRef = useRef(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
@@ -108,24 +107,6 @@ export default function EditApplication({ application, pots = [], sort, filter, 
                     defaultValue={application.purpose}
                     required
                   />
-                </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label" htmlFor={potFieldId}>
-                    Spendentopf
-                  </label>
-                  <select
-                    id={potFieldId}
-                    className="form-select"
-                    name="potId"
-                    defaultValue={application.pot_id ? String(application.pot_id) : ""}
-                  >
-                    <option value="">Kein Spendentopf</option>
-                    {pots.map((pot) => (
-                      <option key={pot.id} value={pot.id}>
-                        {pot.name}
-                      </option>
-                    ))}
-                  </select>
                 </div>
                 <div className="col-12 col-md-6">
                   <label className="form-label" htmlFor={amountId}>

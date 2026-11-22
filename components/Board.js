@@ -20,7 +20,6 @@ const hints = {
   versiegelt:
     "Eine abgeschlossene Abstimmung bleibt festgeschrieben und kann nicht wieder geöffnet werden.",
   ohnebeleg: "Die Abstimmung kann erst abgeschlossen werden, wenn ein Beleg hinterlegt ist.",
-  topf: "Der Höchstbetrag ist höher als der Rest im Spendentopf.",
   zeitraum:
     "Das Datum der Kassenprüfung kann nur auf einen späteren Tag gesetzt werden. Der bisherige Zeitraum wird dabei archiviert.",
   beleg:
@@ -59,7 +58,7 @@ function ExportLinks({ sort, primary = false }) {
   )
 }
 
-export default function Board({ user, data, pots = [], hinweis, sort, filter = "", editId = null }) {
+export default function Board({ user, data, hinweis, sort, filter = "", editId = null }) {
   const message = hints[hinweis]
   const applications = data.applications.filter((application) =>
     matchesFilter(application, filter),
@@ -106,8 +105,7 @@ export default function Board({ user, data, pots = [], hinweis, sort, filter = "
               className="board-new-application"
               sort={sort}
               filter={filter}
-              pots={pots}
-              openOnError={!editId && (hinweis === "antrag" || hinweis === "nachname" || hinweis === "topf")}
+              openOnError={!editId && (hinweis === "antrag" || hinweis === "nachname")}
             />
           ) : null}
         </div>
@@ -124,19 +122,17 @@ export default function Board({ user, data, pots = [], hinweis, sort, filter = "
           user={user}
           sort={sort}
           filter={filter}
-          pots={pots}
-          editId={hinweis === "antrag" || hinweis === "nachname" || hinweis === "topf" ? editId : null}
+          editId={hinweis === "antrag" || hinweis === "nachname" ? editId : null}
         />
       </div>
 
       <div className="d-xl-none">
         <ApplicationCards
           applications={applications}
-          pots={pots}
           user={user}
           sort={sort}
           filter={filter}
-          editId={hinweis === "antrag" || hinweis === "nachname" || hinweis === "topf" ? editId : null}
+          editId={hinweis === "antrag" || hinweis === "nachname" ? editId : null}
         />
       </div>
       </>

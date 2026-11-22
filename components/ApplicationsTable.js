@@ -175,7 +175,6 @@ function readWidths(writerCount, columnCount) {
 
 export default function ApplicationsTable({
   applications,
-  pots = [],
   writers,
   user,
   sort,
@@ -397,7 +396,6 @@ export default function ApplicationsTable({
                   editOnLoad={editId === application.id}
                   wideLayout
                   application={application}
-                  pots={pots}
                   sort={sort}
                   filter={filter}
                 >
@@ -408,9 +406,6 @@ export default function ApplicationsTable({
                     <td>{application.applicant}</td>
                     <td className="purpose">
                       {application.purpose}
-                      {application.pot_name ? (
-                        <div className="small text-secondary">Spendentopf: {application.pot_name}</div>
-                      ) : null}
                     </td>
                     <td className="text-end text-nowrap">
                       {formatEuro(application.amount_cents)} €

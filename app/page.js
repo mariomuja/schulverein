@@ -1,7 +1,6 @@
 import Board from "../components/Board"
 import { boardUser } from "../lib/auth"
 import { loadBoard } from "../lib/board"
-import { listPots } from "../lib/pots"
 import { cleanFilter } from "../lib/list-query"
 
 export const dynamic = "force-dynamic"
@@ -24,8 +23,8 @@ export async function HomeScreen({ searchParams }) {
     )
   }
 
-  const [data, pots] = await Promise.all([loadBoard(sort), listPots()])
-  return <Board user={user} data={data} pots={pots} hinweis={hinweis} sort={sort} filter={filter} editId={editId} />
+  const data = await loadBoard(sort)
+  return <Board user={user} data={data} hinweis={hinweis} sort={sort} filter={filter} editId={editId} />
 }
 
 export default function Page({ searchParams }) {

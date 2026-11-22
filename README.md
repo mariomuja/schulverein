@@ -2,7 +2,7 @@
 
 ![Architektur: Browser, Vercel, Neon PostgreSQL und SMTP](docs/architektur.png)
 
-Web-App für Förderanträge, Mitgliedsdaten, neue Mitgliedschaften, Statistik und Spenden.
+Web-App für Förderanträge, Mitgliedsdaten, neue Mitgliedschaften und Statistik.
 
 Produktion: [schulverein.vercel.app](https://schulverein.vercel.app)
 
@@ -41,14 +41,13 @@ Die Seite ist nicht für Suchmaschinen bestimmt. Ohne persönliche Anmeldung ers
 
 ### Spenden
 
-- Spendentöpfe sammeln zweckgebundene Spenden. Jede angemeldete Person kann sie lesen. Anlegen und Spenden erfassen darf, wer in der Benutzerverwaltung das Schreibrecht für Spendentöpfe hat.
-- Die Töpfe stehen in einer Auswahlliste. Daneben lässt sich ein neuer Topf anlegen. Nach der Auswahl zeigt eine Tabelle die Zugänge und Abgänge. Auf dem Handy steht der Betrag des Topfes rechts oben.
-- Ein Zugang ist eine einmalige Spende mit Betrag in Euro und Verwendungszweck.
-- Ein Abgang entsteht beim Abschließen eines Förderantrags. Jede Person mit Schreibrecht für Förderanträge kann jeden Topf wählen. Liegt der Höchstbetrag über dem Rest im Topf, lässt sich der Antrag nicht speichern. Beim Abschließen erscheint der Höchstbetrag mit dem Zweck des Antrags als Abgang. Der Topf geht nicht unter 0 €.
+- Eine Spende kann jederzeit entgegengenommen werden.
+- Die Mittelverwendung wird über die Förderanträge geregelt.
+- Eine darüber hinausgehende Dokumentation gibt es nicht.
 
 ## Rechte
 
-Personen mit Schreibrecht legen Anträge an, stimmen ab, pflegen Belege und Benutzer. Personen mit Leserecht sehen die Anträge und können CSV und PDF herunterladen. Abschließen bleibt dem Schatzmeister vorbehalten. Spendentöpfe kann jede angemeldete Person lesen. Schreiben daran vergibt die Benutzerverwaltung.
+Personen mit Schreibrecht legen Anträge an, stimmen ab, pflegen Belege und Benutzer. Personen mit Leserecht sehen die Anträge und können CSV und PDF herunterladen. Abschließen bleibt dem Schatzmeister vorbehalten.
 
 Neue Konten entstehen in der Benutzerverwaltung. Der Schatzmeister wird dort nicht neu vergeben.
 

@@ -4,13 +4,12 @@ import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { addApplication } from "../app/actions"
 
-export default function NewApplication({ sort, filter, pots = [], openOnError = false, className = "" }) {
+export default function NewApplication({ sort, filter, openOnError = false, className = "" }) {
   const titleId = useId()
   const dateId = useId()
   const applicantId = useId()
   const purposeId = useId()
   const amountId = useId()
-  const potFieldId = useId()
   const dialogRef = useRef(null)
   const formRef = useRef(null)
   const [open, setOpen] = useState(openOnError)
@@ -124,19 +123,6 @@ export default function NewApplication({ sort, filter, pots = [], openOnError = 
                             maxLength={500}
                             required
                           />
-                        </div>
-                        <div className="col-12 col-md-6">
-                          <label className="form-label" htmlFor={potFieldId}>
-                            Spendentopf
-                          </label>
-                          <select id={potFieldId} className="form-select" name="potId" defaultValue="">
-                            <option value="">Kein Spendentopf</option>
-                            {pots.map((pot) => (
-                              <option key={pot.id} value={pot.id}>
-                                {pot.name}
-                              </option>
-                            ))}
-                          </select>
                         </div>
                         <div className="col-12 col-md-6">
                           <label className="form-label" htmlFor={amountId}>
