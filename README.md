@@ -39,12 +39,6 @@ Die Seite ist nicht für Suchmaschinen bestimmt. Ohne persönliche Anmeldung ers
 - Mitgliederentwicklung je Jahr mit neuen Mitgliedern, Austritten und Bestand zum Jahresende.
 - Diagramme für die Eintritte je Jahr und für den Bestand.
 
-### Spenden
-
-- Eine Spende kann jederzeit entgegengenommen werden.
-- Die Mittelverwendung wird über die Förderanträge geregelt.
-- Eine darüber hinausgehende Dokumentation gibt es nicht.
-
 ## Rechte
 
 Personen mit Schreibrecht legen Anträge an, stimmen ab, pflegen Belege und Benutzer. Personen mit Leserecht sehen die Anträge und können CSV und PDF herunterladen. Abschließen bleibt dem Schatzmeister vorbehalten.
